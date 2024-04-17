@@ -977,6 +977,7 @@ class CrazyflieServer(Node):
         pitch = -msg.linear.x
         yawrate = msg.angular.z
         thrust = int(min(max(msg.linear.z, 0, 0), 60000))
+        # thrust = int(min(max(msg.linear.z * 40000/9.81, 0, 0), 60000)) # assumes thrust in [2.5, 14.5]
         self.swarm._cfs[uri].cf.commander.send_setpoint(
             roll, pitch, yawrate, thrust)
 

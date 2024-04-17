@@ -90,9 +90,9 @@ def generate_launch_description():
                 ('takeoff', 'all/takeoff'),
                 ('land', 'all/land'),
                 # uncomment to manually control (and update teleop.yaml)
-                # ('cmd_vel_legacy', 'cf6/cmd_vel_legacy'),
-                # ('cmd_full_state', 'cf6/cmd_full_state'),
-                # ('notify_setpoints_stop', 'cf6/notify_setpoints_stop'),
+                # ('cmd_vel_legacy', 'cf231/cmd_vel_legacy'),
+                # ('cmd_full_state', 'cf231/cmd_full_state'),
+                # ('notify_setpoints_stop', 'cf231/notify_setpoints_stop'),
             ],
             parameters=[teleop_params]
         ),

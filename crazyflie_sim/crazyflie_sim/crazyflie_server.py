@@ -326,14 +326,24 @@ class CrazyflieServer(Node):
 
         return response
 
-    def _cmd_vel_legacy_changed(self, msg, name=''):
+    def _cmd_vel_legacy_changed(self, msg, name=""):
         """
-        Topic update callback.
-
-        Controls the attitude and thrust of the crazyflie with teleop.
+        Topic update callback to control the attitude and thrust
+            of the crazyflie with teleop
         """
-        self.get_logger().info('cmd_vel_legacy not yet implemented')
+        roll = msg.linear.y
+        pitch = -msg.linear.x
+        yawrate = msg.angular.z
+        thrust = int(min(max(msg.linear.z, 0, 0), 60000))
+        # thrust = int(min(max(msg.linear.z * 40000/9.81, 0, 0), 60000)) # assumes thrust in [2.5, 14.5]
+        
+        # self.swarm._cfs[name].cf.commander.send_setpoint(
+            # roll, pitch, yawrate, thrust)
 
+        self.get_logger().info('cmdvel: (%f, %f, %f, %d) ' % (roll, pitch, yawrate, thrust))
+
+        self.cfs[name].cmdVel(roll, pitch, yawrate, thrust * 9.81/40000)
+        
     def _cmd_hover_changed(self, msg, name=''):
         """
         Topic update callback for hover command.
