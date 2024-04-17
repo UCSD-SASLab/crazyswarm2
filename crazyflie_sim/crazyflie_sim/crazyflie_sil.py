@@ -178,6 +178,21 @@ class CrazyflieSIL:
     #     # simulate this behavior.
     #     pass
 
+    def cmdVelLegacy(self, roll, pitch, yawrate, thrust): 
+        self.mode = CrazyflieSIL.MODE_LOW_VELOCITY
+        self.setpoint.attitude.roll = np.degrees(roll)
+        self.setpoint.attitude.pitch = np.degrees(pitch)
+        self.setpoint.attitudeRate.yaw = np.degrees(yawrate)  # rad/s -> deg/s
+        self.setpoint.thrust = thrust
+        
+        self.setpoint.mode.x = firm.modeDisable
+        self.setpoint.mode.y = firm.modeDisable
+        self.setpoint.mode.z = firm.modeDisable
+        self.setpoint.mode.quat = firm.modeDisable
+        self.setpoint.mode.roll = firm.modeAbs
+        self.setpoint.mode.pitch = firm.modeAbs
+        self.setpoint.mode.yaw = firm.modeVelocity
+
     def cmdFullState(self, pos, vel, acc, yaw, omega):
         self.mode = CrazyflieSIL.MODE_LOW_FULLSTATE
         self.setpoint.position.x = pos[0]

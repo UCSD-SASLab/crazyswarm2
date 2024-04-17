@@ -342,7 +342,7 @@ class CrazyflieServer(Node):
 
         self.get_logger().info('cmdvel: (%f, %f, %f, %d) ' % (roll, pitch, yawrate, thrust))
 
-        self.cfs[name].cmdVel(roll, pitch, yawrate, thrust * 9.81/40000)
+        self.cfs[name].cmdVelLegacy(roll, pitch, yawrate, thrust)
         
     def _cmd_hover_changed(self, msg, name=''):
         """
