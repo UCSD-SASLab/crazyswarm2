@@ -2,8 +2,7 @@
 robots:
   cf231:
     enabled: true
-    initial_position: [0.0, 0.0, 0.0]
-    type: cf21_single  # see robot_types
+    uri: radio://0/80/2M/E7E7E7E7E3
     # firmware_params:
     #   kalman:
     #     pNAcc_xy: 1.0 # default 0.5
