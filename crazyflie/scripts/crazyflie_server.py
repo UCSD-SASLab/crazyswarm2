@@ -208,6 +208,9 @@ class CrazyflieServer(Node):
                     self.swarm._cfs[link_uri].logging["custom_log_groups"][log_group_name][
                         "frequency"] = custom_log_topics[log_group_name]["frequency"]
 
+        for link_uri in self.uris:  # Assert xmode (drone pos) is set for lowlevel commander (cmdVel)
+            self.swarm._cfs[link_uri].cf.commander.set_client_xmode(True)
+        
         # Now all crazyflies are initialized, open links!
         try:
             self.swarm.open_links()
