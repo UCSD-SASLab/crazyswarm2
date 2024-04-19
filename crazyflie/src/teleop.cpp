@@ -65,6 +65,7 @@ public:
         this->get_parameter<float>("initial_position.y", state_.y);
         this->declare_parameter<float>("initial_position.z");
         this->get_parameter<float>("initial_position.z", state_.z);
+        state_.yaw = 0.0;
 
         // declare cmd_rpy params
         declareAxis("cmd_rpy.roll");
