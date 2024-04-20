@@ -76,8 +76,8 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('backend', default_value='cpp'),
         DeclareLaunchArgument('debug', default_value='False'),
-        DeclareLaunchArgument('rviz', default_value='False'),
-        DeclareLaunchArgument('gui', default_value='True'),
+        DeclareLaunchArgument('rviz', default_value='True'),
+        DeclareLaunchArgument('gui', default_value='False'),
         DeclareLaunchArgument('server_yaml_file', default_value=''),
         DeclareLaunchArgument('teleop_yaml_file', default_value=''),
         DeclareLaunchArgument('mocap_yaml_file', default_value=''),
@@ -98,9 +98,9 @@ def generate_launch_description():
                 ('takeoff', 'all/takeoff'),
                 ('land', 'all/land'),
                 # uncomment to manually control (and update teleop.yaml)
-                # ('cmd_vel_legacy', 'cf6/cmd_vel_legacy'),
-                # ('cmd_full_state', 'cf6/cmd_full_state'),
-                # ('notify_setpoints_stop', 'cf6/notify_setpoints_stop'),
+                ('cmd_vel_legacy', 'cf231/cmd_vel_legacy'),
+                ('cmd_full_state', 'cf231/cmd_full_state'),
+                ('notify_setpoints_stop', 'cf231/notify_setpoints_stop'),
             ],
             parameters= [PythonExpression(["'teleop.yaml' if '", LaunchConfiguration('teleop_yaml_file'), "' == '' else '", LaunchConfiguration('teleop_yaml_file'), "'"])],
         ),

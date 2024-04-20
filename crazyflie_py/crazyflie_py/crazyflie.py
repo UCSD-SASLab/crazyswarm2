@@ -17,7 +17,7 @@ from collections import defaultdict
 from crazyflie_interfaces.msg import FullState, Position, Status, TrajectoryPolynomialPiece
 from crazyflie_interfaces.srv import GoTo, Land,\
     NotifySetpointsStop, StartTrajectory, Takeoff, UploadTrajectory
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, Twist
 import numpy as np
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import DescribeParameters, GetParameters, ListParameters, SetParameters
@@ -172,9 +172,8 @@ class Crazyflie:
 
         # self.cmdStopPublisher = rospy.Publisher(
         #   prefix + '/cmd_stop', std_msgs.msg.Empty, queue_size=1)
-
-        # self.cmdVelPublisher = rospy.Publisher(
-        #   prefix + '/cmd_vel', geometry_msgs.msg.Twist, queue_size=1)
+        self.cmdVelPublisher = node.create_publisher(
+            Twist, prefix + '/cmd_vel_legacy', 1)
 
         self.cmdPositionPublisher = node.create_publisher(
             Position, prefix + '/cmd_position', 1)
@@ -621,7 +620,7 @@ class Crazyflie:
     #     """
     #     self.cmdStopPublisher.publish(std_msgs.msg.Empty())
 
-    # def cmdVel(self, roll, pitch, yawrate, thrust):
+    def cmdVel(self, roll, pitch, yawrate, thrust):
     #     """Sends a streaming command of the 'easy mode' manual control inputs.
 
     #     The (absolute roll & pitch, yaw rate, thrust) inputs are typically
@@ -646,15 +645,15 @@ class Crazyflie:
     #             forward/down.
     #         yawrate (float): Yaw angular velocity. Degrees / second. Positive
     #             values == turn counterclockwise.
-    #         thrust (float): Thrust magnitude. Non-meaningful units in [0, 2^16),
+    #         thrust (float): Thrust magnitude. Non-meaningful units in [0, 2^16)
     #             where the maximum value corresponds to maximum thrust.
     #     """
-    #     msg = geometry_msgs.msg.Twist()
-    #     msg.linear.x = pitch
-    #     msg.linear.y = roll
-    #     msg.angular.z = yawrate
-    #     msg.linear.z = thrust
-    #     self.cmdVelPublisher.publish(msg)
+        msg = Twist()
+        msg.linear.x = pitch
+        msg.linear.y = roll
+        msg.angular.z = yawrate
+        msg.linear.z = thrust
+        self.cmdVelPublisher.publish(msg)
 
     def cmdPosition(self, pos, yaw=0.):
         """

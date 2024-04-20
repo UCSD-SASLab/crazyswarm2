@@ -2,9 +2,10 @@
 robots:
   cf231:
     enabled: true
-    uri: radio://0/80/2M/E7E7E7E7E7
-    initial_position: [0.0, 0.0, 0.0]
-    type: cf21  # see robot_types
+    uri: radio://0/80/2M/E7E7E7E7E1
+    initial_position: [-4.5, 0.0, 0.]
+    # initial_position: [0., 0.3, 0.0]
+    type: cf21_single_PID  # see robot_types
     # firmware_params:
     #   kalman:
     #     pNAcc_xy: 1.0 # default 0.5
@@ -14,26 +15,36 @@ robots:
     #     topic_name3: 
     #       frequency: 1
     #       vars: ["acc.x", "acc.y"]
-  cf5:
-    enabled: false
-    uri: radio://0/80/2M/E7E7E7E705
-    initial_position: [0.0, -0.5, 0.0]
-    type: cf21  # see robot_types
-    # firmware_params:
-    #   kalman:
-    #     pNAcc_xy: 1.0 # default 0.5
-    #firmware_logging:
-    #  custom_topics:
-    #    topic_name3: 
-    #      frequency: 1
-    #      vars: ["acc.x", "acc.y", "acc.z"]
+
 # Definition of the various robot types
 robot_types:
-  cf21:
+  cf21_single:
     motion_capture:
       enabled: true
-      # only if enabled; see motion_capture.yaml
       marker: default_single_marker
+      dynamics: leniant
+    big_quad: False
+    battery:
+      voltage_warning: 3.8  # V
+      voltage_critical: 3.7 # V
+
+  cf21_single_PID:
+    motion_capture:
+      enabled: true
+      marker: default_single_marker
+      dynamics: leniant
+    big_quad: False
+    battery:
+      voltage_warning: 3.8  # V
+      voltage_critical: 3.7 # V
+    firmware_params:
+      stabilizer:
+        controller: 1
+  cf21:
+    motion_capture:
+      enabled: false  # Use false if object is defined in optitrack!
+      # only if enabled; see motion_capture.yaml
+      # marker: default_single_marker
       dynamics: default
     big_quad: false
     battery:
@@ -54,9 +65,8 @@ robot_types:
 
   cf21_mocap_deck:
     motion_capture:
-      enabled: true
+      enabled: false
       # only if enabled; see motion_capture.yaml
-      marker: mocap_deck
       dynamics: default
     big_quad: false
     battery:
@@ -77,7 +87,9 @@ all:
      # remove to disable default topic
       pose:
         frequency: 10 # Hz
-      status:
+      odom:
+        frequency: 50 # Hz
+      status:  # SASLAB TODO: Toggle (turned off to not have comm errors) 
         frequency: 1 # Hz
     #custom_topics:
     #  topic_name1:

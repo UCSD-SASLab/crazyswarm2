@@ -37,8 +37,8 @@
         max: 0.5 # rad/s
         deadband: 0.1 # rad/s
       # workspace limits
-      x_limit: [-1.0, 1.0] # m
-      y_limit: [-1.0, 1.0] # m
+      x_limit: [-5.0, 5.0] # m
+      y_limit: [-3.0, 3.0] # m
       z_limit: [0.0, 2.5] # m
     initial_position:
       x: 0.0

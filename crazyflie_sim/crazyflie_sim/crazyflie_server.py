@@ -13,6 +13,8 @@ from crazyflie_interfaces.msg import FullState, Hover
 from crazyflie_interfaces.srv import GoTo, Land, Takeoff
 from crazyflie_interfaces.srv import NotifySetpointsStop, StartTrajectory, UploadTrajectory
 from geometry_msgs.msg import Twist
+from geometry_msgs.msg import PoseStamped
+from nav_msgs.msg import Odometry
 import rclpy
 from rclpy.node import Node
 import rowan
@@ -90,7 +92,9 @@ class CrazyflieServer(Node):
                 initial_state.pos,
                 controller_name,
                 self.backend.time)
-
+            
+        self.pose_publishers = dict()
+        self.odom_publishers = dict()
         for name, _ in self.cfs.items():
             pub = self.create_publisher(
                     String,
@@ -156,6 +160,9 @@ class CrazyflieServer(Node):
                 partial(self._cmd_full_state_changed, name=name),
                 10
             )
+            
+            self.pose_publishers[name] = self.create_publisher(PoseStamped, name + "/pose", 10)
+            self.odom_publishers[name] = self.create_publisher(Odometry, name + "/odom", 10)
 
         # Create services for the entire swarm and each individual crazyflie
         self.create_service(Takeoff, 'all/takeoff', self._takeoff_callback)
@@ -186,19 +193,58 @@ class CrazyflieServer(Node):
     def _timer_callback(self):
         # update setpoint
         states_desired = [cf.getSetpoint() for _, cf in self.cfs.items()]
-
         # execute the control loop
         actions = [cf.executeController() for _, cf in self.cfs.items()]
-
         # execute the physics simulator
         states_next = self.backend.step(states_desired, actions)
 
         # update the resulting state
-        for state, (_, cf) in zip(states_next, self.cfs.items()):
+        for state, (name, cf) in zip(states_next, self.cfs.items()):
             cf.setState(state)
+            self._log_pose_data_callback(name, state)
+            self._log_odom_data_callback(name, state)
 
         for vis in self.visualizations:
-            vis.step(self.backend.time(), states_next, states_desired, actions)
+            vis.step(self.backend.time(), states_next, states_desired, actions)        
+
+    def _log_pose_data_callback(self, name, state):
+        msg = PoseStamped()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = self.world_tf_name
+
+        msg.pose.position.x = state.pos[0]
+        msg.pose.position.y = state.pos[1]
+        msg.pose.position.z = state.pos[2]
+
+        msg.pose.orientation.w = state.quat[0]
+        msg.pose.orientation.x = state.quat[1]
+        msg.pose.orientation.y = state.quat[2]
+        msg.pose.orientation.z = state.quat[3]
+        self.pose_publishers[name].publish(msg)
+
+    def _log_odom_data_callback(self, name, state):
+        msg = Odometry()
+        msg.child_frame_id = name
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = self.world_tf_name
+
+        msg.pose.pose.position.x = state.pos[0]
+        msg.pose.pose.position.y = state.pos[1]
+        msg.pose.pose.position.z = state.pos[2]
+
+        msg.pose.pose.orientation.x = state.quat[1]
+        msg.pose.pose.orientation.y = state.quat[2]
+        msg.pose.pose.orientation.z = state.quat[3]
+
+        msg.twist.twist.linear.x = state.vel[0]
+        msg.twist.twist.linear.y = state.vel[1]
+        msg.twist.twist.linear.z = state.vel[2]
+
+        msg.twist.twist.angular.x = state.omega[0]
+        msg.twist.twist.angular.y = state.omega[1]
+        msg.twist.twist.angular.z = state.omega[2]
+
+        self.odom_publishers[name].publish(msg)
 
     def _param_to_dict(self, param_ros):
         """Turn ROS 2 parameters from the node into a dict."""
@@ -326,14 +372,24 @@ class CrazyflieServer(Node):
 
         return response
 
-    def _cmd_vel_legacy_changed(self, msg, name=''):
+    def _cmd_vel_legacy_changed(self, msg, name=""):
         """
-        Topic update callback.
-
-        Controls the attitude and thrust of the crazyflie with teleop.
+        Topic update callback to control the attitude and thrust
+            of the crazyflie with teleop
         """
-        self.get_logger().info('cmd_vel_legacy not yet implemented')
+        roll = msg.linear.y
+        pitch = -msg.linear.x
+        yawrate = msg.angular.z
+        thrust = int(min(max(msg.linear.z, 0, 0), 60000))
+        # thrust = int(min(max(msg.linear.z * 40000/9.81, 0, 0), 60000)) # assumes thrust in [2.5, 14.5]
+        
+        # self.swarm._cfs[name].cf.commander.send_setpoint(
+            # roll, pitch, yawrate, thrust)
 
+        self.get_logger().info('cmdvel: (%f, %f, %f, %d) ' % (roll, pitch, yawrate, thrust))
+
+        self.cfs[name].cmdVelLegacy(roll, pitch, yawrate, thrust)
+        
     def _cmd_hover_changed(self, msg, name=''):
         """
         Topic update callback for hover command.
