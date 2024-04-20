@@ -208,9 +208,6 @@ class CrazyflieServer(Node):
                     self.swarm._cfs[link_uri].logging["custom_log_groups"][log_group_name][
                         "frequency"] = custom_log_topics[log_group_name]["frequency"]
 
-        for link_uri in self.uris:  # Assert xmode (drone pos) is set for lowlevel commander (cmdVel)
-            self.swarm._cfs[link_uri].cf.commander.set_client_xmode(True)
-        
         # Now all crazyflies are initialized, open links!
         try:
             self.swarm.open_links()
@@ -979,8 +976,7 @@ class CrazyflieServer(Node):
         roll = msg.linear.y
         pitch = -msg.linear.x
         yawrate = msg.angular.z
-        thrust = int(min(max(msg.linear.z, 0, 0), 60000))
-        # thrust = int(min(max(msg.linear.z * 40000/9.81, 0, 0), 60000)) # assumes thrust in [2.5, 14.5]
+        thrust = int(min(max(msg.linear.z, 0, 0), 65535))
         self.get_logger().info("[{0}] cmd_vel_legacy: roll={1:.2f}, \
                                pitch={2:.2f}, yawrate={3:.2f}, thrust={4:.2f}".format(self.cf_dict[uri], roll, pitch, yawrate, thrust))
         self.swarm._cfs[uri].cf.commander.send_setpoint(
