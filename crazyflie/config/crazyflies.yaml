@@ -2,10 +2,10 @@
 robots:
   cf231:
     enabled: true
-    uri: radio://0/80/2M/E7E7E7E7E3
-    initial_position: [-4.5, 0.3, 0.]
-    # initial_position: [0., 0., 0.3]
-    type: cf21_single  # see robot_types
+    uri: radio://0/80/2M/E7E7E7E7E1
+    initial_position: [-4.5, 0.0, 0.]
+    # initial_position: [0., 0.3, 0.0]
+    type: cf21_single_PID  # see robot_types
     # firmware_params:
     #   kalman:
     #     pNAcc_xy: 1.0 # default 0.5
@@ -22,7 +22,7 @@ robot_types:
     motion_capture:
       enabled: true
       marker: default_single_marker
-      dynamics: default
+      dynamics: leniant
     big_quad: False
     battery:
       voltage_warning: 3.8  # V
@@ -32,7 +32,7 @@ robot_types:
     motion_capture:
       enabled: true
       marker: default_single_marker
-      dynamics: default
+      dynamics: leniant
     big_quad: False
     battery:
       voltage_warning: 3.8  # V
