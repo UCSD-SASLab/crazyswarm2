@@ -1,0 +1,2 @@
+- In `cmdVel` mode, if we are doing LQR in both x and y plane, the drone loops around (so overshoots the x target) before it starts moving in the y direction. This has only been tested for trajectories in which it rotates clockwise (hence starting at negative offsets in x and y compared to target). Hypotheses
+    - Firmware code, prioritizing pitch over roll?
