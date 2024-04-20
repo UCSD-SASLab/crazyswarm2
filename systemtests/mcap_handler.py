@@ -34,15 +34,19 @@ class McapHandler:
     
     def write_mcap_to_csv(self, inputbag:str, outputfile:str):
         '''A method which translates an .mcap rosbag file format to a .csv file. 
+        Also modifies the timestamp to start at 0.0 instead of the wall time.
         Only written to translate the /tf topic but could easily be extended to other topics'''
 
+        t_start = None
         try:
             print("Translating .mcap to .csv")
             f = open(outputfile, 'w+')
             writer = csv.writer(f)
             for topic, msg, timestamp in self.read_messages(inputbag):
                 if topic =="/tf":
-                    t = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) 
+                    if t_start == None:
+                        t_start = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) 
+                    t = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) - t_start
                     writer.writerow([t, msg.transforms[0].transform.translation.x, msg.transforms[0].transform.translation.y, msg.transforms[0].transform.translation.z])
             f.close()
         except FileNotFoundError:

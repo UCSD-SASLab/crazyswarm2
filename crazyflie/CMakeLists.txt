@@ -111,6 +111,7 @@ install(PROGRAMS
   scripts/simple_mapper_multiranger.py
   scripts/aideck_streamer.py
   scripts/gui.py
+  scripts/flash.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
