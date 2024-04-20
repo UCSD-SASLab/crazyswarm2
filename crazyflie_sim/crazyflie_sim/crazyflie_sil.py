@@ -180,9 +180,9 @@ class CrazyflieSIL:
 
     def cmdVelLegacy(self, roll, pitch, yawrate, thrust): 
         self.mode = CrazyflieSIL.MODE_LOW_VELOCITY
-        self.setpoint.attitude.roll = np.degrees(roll)
-        self.setpoint.attitude.pitch = np.degrees(pitch)
-        self.setpoint.attitudeRate.yaw = np.degrees(yawrate)  # rad/s -> deg/s
+        self.setpoint.attitude.roll = roll
+        self.setpoint.attitude.pitch = -pitch
+        self.setpoint.attitudeRate.yaw = yawrate  # rad/s -> deg/s
         self.setpoint.thrust = thrust
         
         self.setpoint.mode.x = firm.modeDisable

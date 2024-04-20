@@ -11,9 +11,9 @@ import rowan
 from crazyflie_py import Crazyswarm
 
 
-K_matrix = np.array([[0.0, 0.4, 0.0, 0.0, 0.4, 0.0, 0.0],
-                     [-0.4, 0.0, 0.0, -0.4, 0.0, 0.0, 0.0], 
-                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -4.4721],  
+K_matrix = np.array([[0.0, 0.2, 0.0, 0.0, 0.2, 0.0, 0.0],
+                     [0.2, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0], 
+                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  
                      [0.0, 0.0, -5.4772, 0.0, 0.0, -5.5637, 0.0]])
 
 u_target = np.array([0.0, 0.0, 0.0, 10.5])
@@ -47,13 +47,17 @@ class FeedbackController(Crazyswarm):  # Might need to have it be a child class 
    
     def odom_callback(self, msg):
         # Read odom msg and update estimated state (x, y, z, xdot, ydot, zdot, yaw)
+        euler_angles = rowan.to_euler(([msg.pose.pose.orientation.w, 
+                                        msg.pose.pose.orientation.x, 
+                                        msg.pose.pose.orientation.y, 
+                                        msg.pose.pose.orientation.z]), "xyz")
         new_state = [msg.pose.pose.position.x, 
                      msg.pose.pose.position.y, 
                      msg.pose.pose.position.z, 
                      msg.twist.twist.linear.x, 
                      msg.twist.twist.linear.y, 
                      msg.twist.twist.linear.z,
-                     msg.pose.pose.orientation.z]
+                     euler_angles[2]]
         self.rclpy_node.estimated_state = new_state
         self.update_control()  # TODO: make such that this is controlled with separate timer
 
@@ -66,9 +70,6 @@ class FeedbackController(Crazyswarm):  # Might need to have it be a child class 
                 self.num_zeros_sent += 1
             else:
                 control = K_matrix @ (self.rclpy_node.estimated_state - x_target) + u_target
-                np.set_printoptions(precision=2)
-                print("state", self.rclpy_node.estimated_state)
-                print("control", control)
                 converted_control = self.convert_control(control)
             for cf in self.rclpy_node.crazyflies:
                 cf.cmdVel(converted_control[0], converted_control[1], converted_control[2], converted_control[3])
@@ -76,7 +77,7 @@ class FeedbackController(Crazyswarm):  # Might need to have it be a child class 
     @staticmethod
     def convert_control(control):
         # rpy to degrees, thrust scaled to 0-65535 from 0-16
-        # rpy = control[:3] * 180 / np.pi
-        rpy = control[:3]
+        rpy = np.degrees(control[:3])
+        rpy = np.clip(rpy, -30.0, 30.0)
         thrust = control[3] * 4096
         return np.array([rpy[0], rpy[1], rpy[2], thrust])   
