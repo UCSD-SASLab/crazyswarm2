@@ -232,6 +232,7 @@ class CrazyflieServer(Node):
         msg.pose.pose.position.y = state.pos[1]
         msg.pose.pose.position.z = state.pos[2]
 
+        msg.pose.pose.orientation.w = state.quat[0]
         msg.pose.pose.orientation.x = state.quat[1]
         msg.pose.pose.orientation.y = state.quat[2]
         msg.pose.pose.orientation.z = state.quat[3]

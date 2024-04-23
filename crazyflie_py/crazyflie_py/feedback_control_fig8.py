@@ -2,19 +2,21 @@
 from crazyflie_interfaces.srv import GoTo, Land, Takeoff, NotifySetpointsStop
 from geometry_msgs.msg import Point, Twist
 from nav_msgs.msg import Odometry
+import rclpy.logging
 from std_msgs.msg import Bool, String
 import numpy as np
 import time
-
+from rclpy.node import Node
 import rclpy 
-import rclpy.node
+# import rclpy.node
 import rowan
+import logging
 from crazyflie_py import Crazyswarm
 
 
 K_matrix = np.array([[0.0, 0.2, 0.0, 0.0, 0.2, 0.0, 0.0],
                      [0.2, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0], 
-                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  
+                     [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],  
                      [0.0, 0.0, -5.4772, 0.0, 0.0, -5.5637, 0.0]])
 
 u_target = np.array([0.0, 0.0, 0.0, 10.5])
@@ -34,8 +36,16 @@ class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child c
         self.rclpy_node = self.allcfs
         self.rclpy_node.estimated_state = np.zeros(7) # TODO: Customize for different state fidelities
         self.rclpy_node.lqr_active = False
-        self.i = 0
-        self.t = rclpy.node.Node.create_timer(1.5, self.update_i)
+        self.i = -1
+        self.delay = 2.5
+        
+        self.pub = self.rclpy_node.create_publisher(
+                    String,
+                    'cf231/test', 10)
+        
+        self.rclpy_node.get_logger().info("TEST")
+
+        self.t = None
         assert len(self.rclpy_node.crazyflies) == 1, "Feedback controller only supports one drone"
         for cf in self.rclpy_node.crazyflies:
             cf_name = cf.prefix
@@ -43,12 +53,17 @@ class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child c
         self.num_zeros_sent = 0.0
         self.start_lqr_subscriber = self.rclpy_node.create_subscription(String, 'start_lqr', self.start_lqr_callback, 10)
     
-    def update_i(self, time):
-        if self.i == 8: 
-            self.i = 0
+    def update_i(self):
+        if self.i == 7: 
+            self.i = -1
         self.i += 1
 
+        msg = String()
+        msg.data = f"{self.i}"
+        self.pub.publish(msg)
+
     def start_lqr_callback(self, msg):
+        self.t = self.rclpy_node.create_timer(self.delay, self.update_i)
         self.rclpy_node.lqr_active = not self.rclpy_node.lqr_active
         if self.rclpy_node.lqr_active:
             print("LQR activated")
@@ -76,7 +91,7 @@ class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child c
         self.rclpy_node.estimated_state = new_state
         self.update_control()  # TODO: make such that this is controlled with separate timer
 
-    def update_control(self, x_target):
+    def update_control(self):
         # Calculate control input based on estimated state
         # Publish control input
         if self.rclpy_node.lqr_active:
@@ -93,6 +108,6 @@ class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child c
     def convert_control(control):
         # rpy to degrees, thrust scaled to 0-65535 from 0-16
         rpy = np.degrees(control[:3])
-        rpy = np.clip(rpy, -30.0, 30.0)
+        rpy = np.clip(rpy, -10.0, 10.0)
         thrust = control[3] * 4096
         return np.array([rpy[0], rpy[1], rpy[2], thrust]) # roll, pitch, yaw, thrust

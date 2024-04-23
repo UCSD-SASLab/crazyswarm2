@@ -17,7 +17,7 @@ K_matrix = np.array([[0.0, 0.2, 0.0, 0.0, 0.2, 0.0, 0.0],
                      [0.0, 0.0, -5.4772, 0.0, 0.0, -5.5637, 0.0]])
 
 u_target = np.array([0.0, 0.0, 0.0, 10.5])
-x_target = np.array([-4.5, 0.5, 1.0, 0.0, 0.0, 0.0, 0.0])
+x_target = np.array([2.5, 2.0, 1.0, 0.0, 0.0, 0.0, 0.0])
 
 
 class FeedbackController(Crazyswarm):  # Might need to have it be a child class of Crazyswarm instead?

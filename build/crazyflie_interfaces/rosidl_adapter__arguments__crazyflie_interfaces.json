@@ -1,0 +1,26 @@
+{
+  "package_name": "crazyflie_interfaces",
+  "non_idl_tuples": [
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:msg/ConnectionStatistics.msg",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:msg/ConnectionStatisticsArray.msg",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:msg/FullState.msg",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:msg/LogDataGeneric.msg",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:msg/Hover.msg",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:msg/LogBlock.msg",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:msg/Position.msg",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:msg/Status.msg",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:msg/TrajectoryPolynomialPiece.msg",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:msg/VelocityWorld.msg",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:srv/GoTo.srv",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:srv/Land.srv",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:srv/NotifySetpointsStop.srv",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:srv/SetGroupMask.srv",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:srv/StartTrajectory.srv",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:srv/Stop.srv",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:srv/Takeoff.srv",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:srv/UpdateParams.srv",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:srv/UploadTrajectory.srv",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:srv/RemoveLogging.srv",
+    "/home/saslab/ros2_ws/src/crazyswarm2/crazyflie_interfaces:srv/AddLogging.srv"
+  ]
+}

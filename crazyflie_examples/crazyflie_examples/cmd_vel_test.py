@@ -25,14 +25,14 @@ def main():
     for cf in allcfs.crazyflies:
         cf.goTo([xpos, 0.0, 1.0], 0.0, 5.)
     timeHelper.sleep(4.) 
-
+    # timeHelper.sleep(2.)
  
     for j  in range(1256):
         for cf in allcfs.crazyflies:
             if j <= 5:
                 cf.cmdVel(0., 0., 0., 0.)
             else:
-                cf.cmdVel(0., 0., 0., 55000.)
+                cf.cmdVel(0., 0., 50., 42000.)
 
             ## With cmdFullState (works)
             # pos = 1. + 0.5 * np.sin(j / 100)

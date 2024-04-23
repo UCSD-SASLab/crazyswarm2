@@ -1,12 +1,12 @@
 #!/usr/bin/env python
-from crazyflie_py import FeedbackController
+from crazyflie_py import FeedbackController, FeedbackController_Fig8
 import numpy as np
 
 
 def main():
     Z = 1.0
 
-    swarm = FeedbackController()
+    swarm = FeedbackController_Fig8()
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs
 
