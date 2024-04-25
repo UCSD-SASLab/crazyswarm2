@@ -15,7 +15,7 @@
     firmware_params:
       query_all_values_on_connect: false
     sim:
-      max_dt: 0.01
+      max_dt: 0.001
       backend: np
       visualizations:
         rviz:
@@ -55,16 +55,16 @@
                 - 0.61394313
                 - -0.61394313
                 - 1.48218982
-      controller: mellinger
+      controller: pid
     robots:
       cf231:
         enabled: true
-        uri: radio://0/80/2M/E7E7E7E7E3
+        uri: radio://0/80/2M/E7E7E7E7E1
         initial_position:
         - 0.0
         - 0.0
         - 0.0
-        type: cf21_single
+        type: cf21_single_PID
     robot_types:
       cf21_single:
         motion_capture:
@@ -118,7 +118,7 @@
           enHighLevel: 1
         stabilizer:
           estimator: 2
-          controller: 2
+          controller: 1
         locSrv:
           extPosStdDev: 1e-3
           extQuatStdDev: 0.05

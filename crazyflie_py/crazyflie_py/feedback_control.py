@@ -12,12 +12,13 @@ from crazyflie_py import Crazyswarm
 
 
 K_matrix = np.array([[0.0, 0.2, 0.0, 0.0, 0.2, 0.0, 0.0],
-                     [0.2, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0], 
+                     [0.1, 0.0, 0.0, 0.2, 0.0, 0.0, 0.0], 
                      [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  
                      [0.0, 0.0, -5.4772, 0.0, 0.0, -5.5637, 0.0]])
 
 u_target = np.array([0.0, 0.0, 0.0, 10.5])
-x_target = np.array([2.5, 2.0, 1.0, 0.0, 0.0, 0.0, 0.0])
+x_target = np.array([1.5, -1.5, 1.0, 0.0, 0.0, 0.0, 0.0])
+# x_target = np.array([-4.5, 1.5, 1.0, 0.0, 0.0, 0.0, 0.0]) #Coordinate used for testing fans
 
 
 class FeedbackController(Crazyswarm):  # Might need to have it be a child class of Crazyswarm instead?
@@ -25,6 +26,8 @@ class FeedbackController(Crazyswarm):  # Might need to have it be a child class 
         super().__init__()  # Inits Crazyswarm
         self.rclpy_node = self.allcfs
         self.rclpy_node.estimated_state = np.zeros(7) # TODO: Customize for different state fidelities
+        # x_target_offset = x_target.copy()
+        # x_target_offset[0:2] += np.array(self.rclpy_node.crazyflies[0].initialPosition)
         self.rclpy_node.lqr_active = False
         assert len(self.rclpy_node.crazyflies) == 1, "Feedback controller only supports one drone"
         for cf in self.rclpy_node.crazyflies:
@@ -78,6 +81,7 @@ class FeedbackController(Crazyswarm):  # Might need to have it be a child class 
     def convert_control(control):
         # rpy to degrees, thrust scaled to 0-65535 from 0-16
         rpy = np.degrees(control[:3])
+        rpy[2] = 0.0
         rpy = np.clip(rpy, -30.0, 30.0)
         thrust = control[3] * 4096
         return np.array([rpy[0], rpy[1], rpy[2], thrust])   

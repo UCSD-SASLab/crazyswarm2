@@ -2,10 +2,10 @@
 robots:
   cf231:
     enabled: true
-    uri: radio://0/80/2M/E7E7E7E7E3
-    # initial_position: [-4.5, 2.0, 0.]
+    uri: radio://0/80/2M/E7E7E7E7E1
+    # initial_position: [-4.5, 0.0, 0.]
     initial_position: [0., 0.0, 0.0]
-    type: cf21_single  # see robot_types
+    type: cf21_single_PID  # see robot_types
     # firmware_params:
     #   kalman:
     #     pNAcc_xy: 1.0 # default 0.5
@@ -105,7 +105,7 @@ all:
       enHighLevel: 1
     stabilizer:
       estimator: 2 # 1: complementary, 2: kalman
-      controller: 2 # 1: PID, 2: mellinger
+      controller: 1 # 1: PID, 2: mellinger
     # ring:
     #   effect: 16 # 6: double spinner, 7: solid color, 16: packetRate
     #   solidBlue: 255 # if set to solid color

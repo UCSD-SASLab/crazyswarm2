@@ -19,15 +19,52 @@ K_matrix = np.array([[0.0, 0.2, 0.0, 0.0, 0.2, 0.0, 0.0],
                      [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],  
                      [0.0, 0.0, -5.4772, 0.0, 0.0, -5.5637, 0.0]])
 
+def make_fig8_traj(center=np.array([0., 0.]), offset=np.array([1., 2.]), h=1.): ## for making a figure 8 waypoint list
+    traj = np.array([[center[0], center[1], h, 0. ,0. ,0. ,0.],
+                    [center[0] - offset[0], center[1] + offset[1]/2, h, 0.0, 0.0, 0.0, 0.0], 
+                    [center[0], center[1] + offset[1], h, 0.0, 0.0, 0.0, 0.0], 
+                    [center[0] + offset[0], center[1] + offset[1]/2, h, 0.0, 0.0, 0.0, 0.0], 
+                    [center[0], center[1], h, 0.0, 0.0, 0.0, 0.0], 
+                    [center[0] - offset[0], center[1] - offset[1]/2, h, 0.0, 0.0, 0.0, 0.0], 
+                    [center[0], center[1] - offset[1], h, 0.0, 0.0, 0.0, 0.0], 
+                    [center[0] + offset[0], center[1] - offset[1]/2, h, 0.0, 0.0, 0.0, 0.0],
+                    [center[0], center[1], h, 0.0, 0.0, 0.0, 0.0]])
+    return traj
+
+def make_jump_traj(center=np.array([0., 0., 1.]), step_max=3, iter=5, jumps=3): 
+    traj = [np.concatenate([center, np.zeros(4)])]
+
+    x_max = 3.5
+    y_max = 2.0
+    for i in range(iter):
+        for j in range(jumps):
+            d = step_max * 2 * np.random.rand() # deviation param
+            dev = np.subtract(d * np.random.rand(center.shape[0]), d/2) # deviation
+            traj.append(np.concatenate([traj[-1][:center.shape[0]] + dev, np.zeros(4)]))
+
+            if abs(traj[-1][0]) > x_max: traj[-1][1] = np.sign(traj[-1][1])*x_max
+            if abs(traj[-1][1]) > y_max: traj[-1][1] = np.sign(traj[-1][1])*y_max
+            if traj[-1][2] < 0.5: traj[-1][2] = 0.5
+            if traj[-1][2] > 1.5: traj[-1][2] = 1.5
+
+        traj.append(np.concatenate([center, np.zeros(4)]))
+    return traj
+
 u_target = np.array([0.0, 0.0, 0.0, 10.5])
-x_targets = np.array([[-2., 2., 1.0, 0.0, 0.0, 0.0, 0.0], 
-                    [0., 4., 1.0, 0.0, 0.0, 0.0, 0.0], 
-                    [2., 2., 1.0, 0.0, 0.0, 0.0, 0.0], 
-                    [0., 0., 1.0, 0.0, 0.0, 0.0, 0.0],
-                    [-2., -2., 1.0, 0.0, 0.0, 0.0, 0.0],
-                    [0., -4., 1.0, 0.0, 0.0, 0.0, 0.0],
-                    [2., -2., 1.0, 0.0, 0.0, 0.0, 0.0],
-                    [0., 0., 1.0, 0.0, 0.0, 0.0, 0.0]]) # just expand this target set?
+x_targets = make_jump_traj()
+
+
+center = [-4.5, 0.] # center of fig 8
+offset = [0.6, 1.7] # > 0
+
+x_targets_real = np.array([[-1., 1., 1.0, 0.0, 0.0, 0.0, 0.0], 
+                            [0., 2., 1.0, 0.0, 0.0, 0.0, 0.0], 
+                            [1., 1., 1.0, 0.0, 0.0, 0.0, 0.0], 
+                            [0., 0., 1.0, 0.0, 0.0, 0.0, 0.0],
+                            [-1., -1., 1.0, 0.0, 0.0, 0.0, 0.0],
+                            [0., -2., 1.0, 0.0, 0.0, 0.0, 0.0],
+                            [1., -1., 1.0, 0.0, 0.0, 0.0, 0.0],
+                            [0., 0., 1.0, 0.0, 0.0, 0.0, 0.0]]) # just expand this target set?
 
 
 class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child class of Crazyswarm instead?
@@ -37,7 +74,7 @@ class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child c
         self.rclpy_node.estimated_state = np.zeros(7) # TODO: Customize for different state fidelities
         self.rclpy_node.lqr_active = False
         self.i = -1
-        self.delay = 2.5
+        self.delay = 1.5
         
         self.pub = self.rclpy_node.create_publisher(
                     String,
@@ -54,7 +91,7 @@ class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child c
         self.start_lqr_subscriber = self.rclpy_node.create_subscription(String, 'start_lqr', self.start_lqr_callback, 10)
     
     def update_i(self):
-        if self.i == 7: 
+        if self.i == len(x_targets)-1: 
             self.i = -1
         self.i += 1
 
@@ -108,6 +145,6 @@ class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child c
     def convert_control(control):
         # rpy to degrees, thrust scaled to 0-65535 from 0-16
         rpy = np.degrees(control[:3])
-        rpy = np.clip(rpy, -10.0, 10.0)
+        rpy = np.clip(rpy, -30.0, 30.0)
         thrust = control[3] * 4096
         return np.array([rpy[0], rpy[1], rpy[2], thrust]) # roll, pitch, yaw, thrust
