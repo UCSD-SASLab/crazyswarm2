@@ -18,6 +18,15 @@ def generate_launch_description():
 
     server_params = crazyflies
 
+    # robot description
+    urdf = os.path.join(
+        get_package_share_directory('crazyflie'),
+        'urdf',
+        'crazyflie_description.urdf')
+    with open(urdf, 'r') as f:
+        robot_desc = f.read()
+    server_params['robot_description'] = robot_desc
+
     return LaunchDescription([
         Node(
             package='crazyflie',

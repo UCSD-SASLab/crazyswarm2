@@ -954,15 +954,20 @@ class CrazyflieServer(rclpy.node.Node):
 
     def setParam(self, name, value):
         """Set parameter via broadcasts. See Crazyflie.setParam for details."""
-        param_name = 'all.params.' + name
-        param_type = self.paramTypeDict[name]
-        if param_type == ParameterType.PARAMETER_INTEGER:
-            param_value = ParameterValue(type=param_type, integer_value=int(value))
-        elif param_type == ParameterType.PARAMETER_DOUBLE:
-            param_value = ParameterValue(type=param_type, double_value=float(value))
-        req = SetParameters.Request()
-        req.parameters = [Parameter(name=param_name, value=param_value)]
-        self.setParamsService.call_async(req)
+        try:
+            param_name = 'all.params.' + name
+            param_type = self.paramTypeDict[name]
+            if param_type == ParameterType.PARAMETER_INTEGER:
+                param_value = ParameterValue(type=param_type, integer_value=int(value))
+            elif param_type == ParameterType.PARAMETER_DOUBLE:
+                param_value = ParameterValue(type=param_type, double_value=float(value))
+            req = SetParameters.Request()
+            req.parameters = [Parameter(name=param_name, value=param_value)]
+            self.setParamsService.call_async(req)
+        except KeyError as e:
+            self.get_logger().warn(f'(crazyflie.py)setParam : keyError raised {e}')
+        except Exception as e:
+            self.get_logger().warn(f'(crazyflie.py)setParam : exception raised {e}')
 
     def cmdFullState(self, pos, vel, acc, yaw, omega):
         """

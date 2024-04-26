@@ -7,6 +7,7 @@ import yaml
 
 
 def generate_launch_description():
+
     # load crazyflies
     crazyflies_yaml = os.path.join(
         get_package_share_directory('crazyflie'),
@@ -18,6 +19,15 @@ def generate_launch_description():
 
     server_params = crazyflies
 
+    # robot description
+    urdf = os.path.join(
+        get_package_share_directory('crazyflie'),
+        'urdf',
+        'crazyflie_description.urdf')
+    with open(urdf, 'r') as f:
+        robot_desc = f.read()
+    server_params['robot_description'] = robot_desc
+
     crazyflie_name = '/cf231'
 
     return LaunchDescription([
@@ -26,7 +36,7 @@ def generate_launch_description():
             executable='crazyflie_server.py',
             name='crazyflie_server',
             output='screen',
-            parameters=[server_params],
+            parameters=[server_params]
         ),
         Node(
             package='crazyflie',
@@ -43,6 +53,6 @@ def generate_launch_description():
             name='simple_mapper_multiranger',
             output='screen',
             parameters=[
-                        {'robot_prefix': crazyflie_name}]
+                {'robot_prefix': crazyflie_name}]
         ),
     ])

@@ -25,7 +25,7 @@ class Plotter:
         self.SIM = sim_backend      #indicates if we are plotting data from real life test or from a simulated test. Default is false (real life test)
         self.EPSILON = 0.15 # euclidian distance in [m] between ideal and recorded trajectory under which the drone has to stay to pass the test (NB : epsilon is doubled for multi_trajectory test)
         self.ALLOWED_DEV_POINTS = 0.05  #allowed percentage of datapoints whose deviation > EPSILON while still passing test (currently % for fig8 and 10% for mt)
-        self.DELAY_CONST_FIG8 = 1.3 #4.75 #this is the delay constant which I found by adding up all the time.sleep() etc in the figure8.py file. 
+        self.DELAY_CONST_FIG8 = 1.3 #delay const used to temporally align the ideal traj with the real traj
         self.DELAY_CONST_MT = 5.5
         if self.SIM :                #It allows to temporally adjust the ideal and real trajectories on the graph. Could this be implemented in a better (not hardcoded) way ?
             self.DELAY_CONST_FIG8 = -0.45  #for an unknown reason, the delay constants with the sim_backend is different
@@ -146,11 +146,11 @@ class Plotter:
         landing_index = None
         i=0
         for z_coord in self.bag_z:
-            if not(airborne) and z_coord > ground_level + ground_level*(0.1): #when altitude of the drone is 10% higher than the ground level, it started takeoff
+            if not(airborne) and z_coord > ground_level + 0.05: #when altitude of the drone is 5cm above ground level, it started takeoff
                 takeoff_index = i
                 airborne = True
                 print(f"takeoff time is {self.bag_times[takeoff_index]}s")
-            if airborne and z_coord <= ground_level + ground_level*(0.1): #find when it lands again
+            if airborne and z_coord < ground_level + 0.05: #find when it lands again
                 landing_index = i
                 print(f"landing time is {self.bag_times[landing_index]}s")
                 break
