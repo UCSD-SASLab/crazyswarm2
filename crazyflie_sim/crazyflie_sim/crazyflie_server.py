@@ -324,7 +324,7 @@ class CrazyflieServer(Node):
         return response
 
     def _notify_setpoints_stop_callback(self, request, response, name='all'):
-        self.get_logger().info(f'[{name}] Notify setpoint stop not yet implemented')
+        self.get_logger().info(f'[{name}] Notify setpoint stop not yet implemented. Should not impact performance')
         return response
 
     def _upload_trajectory_callback(self, request, response, name='all'):

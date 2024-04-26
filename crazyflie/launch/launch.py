@@ -74,7 +74,7 @@ def generate_launch_description():
         yaml.dump(motion_capture_content, outfile, default_flow_style=False, sort_keys=False)
 
     return LaunchDescription([
-        DeclareLaunchArgument('backend', default_value='cpp'),
+        DeclareLaunchArgument('backend', default_value='cflib'),
         DeclareLaunchArgument('debug', default_value='False'),
         DeclareLaunchArgument('rviz', default_value='True'),
         DeclareLaunchArgument('gui', default_value='False'),

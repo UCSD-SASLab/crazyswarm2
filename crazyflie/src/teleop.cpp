@@ -59,11 +59,11 @@ public:
         this->declare_parameter("auto_yaw_rate", 0.0);
         this->get_parameter<double>("auto_yaw_rate", auto_yaw_rate_);
 
-        this->declare_parameter<float>("initial_position.x");
+        this->declare_parameter<float>("initial_position.x", 0.0);
         this->get_parameter<float>("initial_position.x", state_.x);
-        this->declare_parameter<float>("initial_position.y");
+        this->declare_parameter<float>("initial_position.y", 0.0);
         this->get_parameter<float>("initial_position.y", state_.y);
-        this->declare_parameter<float>("initial_position.z");
+        this->declare_parameter<float>("initial_position.z", 0.0);
         this->get_parameter<float>("initial_position.z", state_.z);
         state_.yaw = 0.0;
 
@@ -82,16 +82,16 @@ public:
         this->declare_parameter("cmd_vel_world.y_limit", rclcpp::PARAMETER_DOUBLE_ARRAY);
         this->declare_parameter("cmd_vel_world.z_limit", rclcpp::PARAMETER_DOUBLE_ARRAY);
 
-        this->declare_parameter<float>("takeoff.duration");
+        this->declare_parameter<float>("takeoff.duration", rclcpp::PARAMETER_DOUBLE);
         this->get_parameter<float>("takeoff.duration", takeoff_paras_.duration);
-        this->declare_parameter<float>("takeoff.height");
+        this->declare_parameter<float>("takeoff.height", rclcpp::PARAMETER_DOUBLE);
         this->get_parameter<float>("takeoff.height", takeoff_paras_.height);
-        this->declare_parameter<int>("takeoff.button");
+        this->declare_parameter<int>("takeoff.button", rclcpp::PARAMETER_DOUBLE);
         this->get_parameter<int>("takeoff.button", takeoff_paras_.button);
-
-        this->declare_parameter<int>("land.button");
+        // parameter of type int
+        this->declare_parameter<int>("land.button", rclcpp::PARAMETER_INTEGER);
         this->get_parameter<int>("land.button", land_button);
-        this->declare_parameter<int>("emergency.button");
+        this->declare_parameter<int>("emergency.button", rclcpp::PARAMETER_INTEGER);
         this->get_parameter<int>("emergency.button", emergency_button);
 
         on_mode_switched();
@@ -327,9 +327,9 @@ private:
 
     void declareAxis(const std::string& name)
     {
-        this->declare_parameter<int>(name + ".axis");
-        this->declare_parameter<float>(name + ".max");
-        this->declare_parameter<float>(name + ".deadband");
+        this->declare_parameter<int>(name + ".axis", rclcpp::PARAMETER_INTEGER);
+        this->declare_parameter<float>(name + ".max", rclcpp::PARAMETER_DOUBLE);
+        this->declare_parameter<float>(name + ".deadband", rclcpp::PARAMETER_DOUBLE);
     }
 
     void getAxis(const std::string& name, Axis& axis)
