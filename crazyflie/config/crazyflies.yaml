@@ -86,9 +86,9 @@ all:
     default_topics:
      # remove to disable default topic
       pose:
-        frequency: 10 # Hz
-      odom:
         frequency: 50 # Hz
+      odom:
+        frequency: 100 # Hz
       status:  # SASLAB TODO: Toggle (turned off to not have comm errors) 
         frequency: 1 # Hz
     #custom_topics:

@@ -31,7 +31,7 @@ def make_fig8_traj(center=np.array([0., 0.]), offset=np.array([1., 2.]), h=1.): 
                     [center[0], center[1], h, 0.0, 0.0, 0.0, 0.0]])
     return traj
 
-def make_jump_traj(center=np.array([0., 0., 1.]), step_max=3, iter=5, jumps=3): 
+def make_jump_traj(center=np.array([0., 0., 1.]), step_max=3, iter=10, jumps=3): 
     traj = [np.concatenate([center, np.zeros(4)])]
 
     x_max = 3.5
@@ -53,19 +53,8 @@ def make_jump_traj(center=np.array([0., 0., 1.]), step_max=3, iter=5, jumps=3):
 u_target = np.array([0.0, 0.0, 0.0, 10.5])
 x_targets = make_jump_traj()
 
-
-center = [-4.5, 0.] # center of fig 8
-offset = [0.6, 1.7] # > 0
-
-x_targets_real = np.array([[-1., 1., 1.0, 0.0, 0.0, 0.0, 0.0], 
-                            [0., 2., 1.0, 0.0, 0.0, 0.0, 0.0], 
-                            [1., 1., 1.0, 0.0, 0.0, 0.0, 0.0], 
-                            [0., 0., 1.0, 0.0, 0.0, 0.0, 0.0],
-                            [-1., -1., 1.0, 0.0, 0.0, 0.0, 0.0],
-                            [0., -2., 1.0, 0.0, 0.0, 0.0, 0.0],
-                            [1., -1., 1.0, 0.0, 0.0, 0.0, 0.0],
-                            [0., 0., 1.0, 0.0, 0.0, 0.0, 0.0]]) # just expand this target set?
-
+# center = [-4.5, 0.] # center of fig 8, back area
+# offset = [0.6, 1.7] #
 
 class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child class of Crazyswarm instead?
     def __init__(self):
@@ -79,6 +68,10 @@ class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child c
         self.pub = self.rclpy_node.create_publisher(
                     String,
                     'cf231/test', 10)
+        
+        self.control_pub = self.rclpy_node.create_publisher(
+                    String,
+                    'cf231/rpyt', 10)
         
         self.rclpy_node.get_logger().info("TEST")
 
@@ -98,6 +91,7 @@ class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child c
         msg = String()
         msg.data = f"{self.i}"
         self.pub.publish(msg)
+        self.rclpy_node.get_logger().info(f"New Waypoint : [{x_targets[self.i][0]}, {x_targets[self.i][1]}, {x_targets[self.i][2]}]")
 
     def start_lqr_callback(self, msg):
         self.t = self.rclpy_node.create_timer(self.delay, self.update_i)
@@ -131,20 +125,32 @@ class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child c
     def update_control(self):
         # Calculate control input based on estimated state
         # Publish control input
+
+        # self.rclpy_node.get_logger().info("LQR active? {self.rclpy_node.lqr_active}")
+
         if self.rclpy_node.lqr_active:
             if self.num_zeros_sent < 5:
                 converted_control = np.zeros(4)
+                control_bounded = np.zeros(4)
                 self.num_zeros_sent += 1
+
             else:
                 control = K_matrix @ (self.rclpy_node.estimated_state - x_targets[self.i]) + u_target
-                converted_control = self.convert_control(control)
+                control_bounded = np.concatenate((np.clip(control[:3], -np.pi/6, np.pi/6), [control[3]]))
+                converted_control = self.convert_control(control_bounded)
+
             for cf in self.rclpy_node.crazyflies:
+                # self.rclpy_node.get_logger().info(f"RPYT = [{converted_control[0]}, {converted_control[1]}, {converted_control[2]}, {converted_control[3]}]")
                 cf.cmdVel(converted_control[0], converted_control[1], converted_control[2], converted_control[3])
+
+                msg = String()
+                msg.data = f"RPYT = [{control_bounded[0]}, {control_bounded[1]}, {control_bounded[2]}, {control_bounded[3]}], Time = {self.rclpy_node.get_clock().now()}"
+                self.control_pub.publish(msg)
         
     @staticmethod
     def convert_control(control):
         # rpy to degrees, thrust scaled to 0-65535 from 0-16
         rpy = np.degrees(control[:3])
-        rpy = np.clip(rpy, -30.0, 30.0)
+        # rpy = np.clip(rpy, -30.0, 30.0) # WAS : moved out since bounding isnt conversion, important to know about
         thrust = control[3] * 4096
         return np.array([rpy[0], rpy[1], rpy[2], thrust]) # roll, pitch, yaw, thrust
