@@ -64,6 +64,7 @@ class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child c
         self.rclpy_node.lqr_active = False
         self.i = -1
         self.delay = 1.5
+        self.control_angle_bound = np.pi/6 # higher bound allows more aggressive control
         
         self.pub = self.rclpy_node.create_publisher(
                     String,
@@ -73,7 +74,7 @@ class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child c
                     String,
                     'cf231/rpyt', 10)
         
-        self.rclpy_node.get_logger().info("TEST")
+        # self.rclpy_node.get_logger().info("TEST")
 
         self.t = None
         assert len(self.rclpy_node.crazyflies) == 1, "Feedback controller only supports one drone"
@@ -136,7 +137,7 @@ class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child c
 
             else:
                 control = K_matrix @ (self.rclpy_node.estimated_state - x_targets[self.i]) + u_target
-                control_bounded = np.concatenate((np.clip(control[:3], -np.pi/6, np.pi/6), [control[3]]))
+                control_bounded = np.concatenate((np.clip(control[:3], -self.control_angle_bound, self.control_angle_bound), [control[3]])) # CONTROL ANGLE BOUNDING
                 converted_control = self.convert_control(control_bounded)
 
             for cf in self.rclpy_node.crazyflies:
@@ -144,7 +145,7 @@ class FeedbackController_Fig8(Crazyswarm):  # Might need to have it be a child c
                 cf.cmdVel(converted_control[0], converted_control[1], converted_control[2], converted_control[3])
 
                 msg = String()
-                msg.data = f"RPYT = [{control_bounded[0]}, {control_bounded[1]}, {control_bounded[2]}, {control_bounded[3]}], Time = {self.rclpy_node.get_clock().now()}"
+                msg.data = f"RPYT = [{control_bounded[0]}, {control_bounded[1]}, {control_bounded[2]}, {control_bounded[3]}]"
                 self.control_pub.publish(msg)
         
     @staticmethod
