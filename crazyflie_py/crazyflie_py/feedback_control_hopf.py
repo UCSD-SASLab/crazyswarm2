@@ -56,12 +56,14 @@ x_targets = make_jump_traj()
 # center = [-4.5, 0.] # center of fig 8, back area
 # offset = [0.6, 1.7] #
 
-class FeedbackController_Fig8(Crazyswarm):
+class FeedbackController_hopf(Crazyswarm):
     def __init__(self):
         super().__init__()  # Inits Crazyswarm
         self.rclpy_node = self.allcfs
         self.rclpy_node.estimated_state = np.zeros(7) # TODO: Customize for different state fidelities
-        self.rclpy_node.lqr_active = False
+        self.rclpy_node.ctrl_active = False
+        self.controller = "LQR"
+
         self.i = -1
         self.delay = 1.5
         self.control_angle_bound = np.pi/6 # higher bound allows more aggressive control
@@ -74,15 +76,15 @@ class FeedbackController_Fig8(Crazyswarm):
                     String,
                     'cf231/rpyt', 10)
         
-        # self.rclpy_node.get_logger().info("TEST")
-
         self.t = None
         assert len(self.rclpy_node.crazyflies) == 1, "Feedback controller only supports one drone"
         for cf in self.rclpy_node.crazyflies:
             cf_name = cf.prefix
             self.odomSubscriber = self.rclpy_node.create_subscription(Odometry, f'{cf_name}/odom', self.odom_callback, 10)
         self.num_zeros_sent = 0.0
-        self.start_lqr_subscriber = self.rclpy_node.create_subscription(String, 'start_custom_controller', self.start_lqr_callback, 10)
+        # self.start_lqr_subscriber = self.rclpy_node.create_subscription(String, 'start_custom_controller', self.start_lqr_callback, 10)
+        self.start_ctrl_subscriber = self.rclpy_node.create_subscription(String, 'start_custom_controller', self.start_controller_callback, 10)
+
     
     def update_i(self):
         if self.i < len(x_targets)-1: 
@@ -91,16 +93,15 @@ class FeedbackController_Fig8(Crazyswarm):
             msg = String()
             msg.data = f"{self.i}"
             self.pub.publish(msg)
-            # self.rclpy_node.get_logger().info(f"New Waypoint : [{x_targets[self.i][0]:.2f}, {x_targets[self.i][1]:.2f}, {x_targets[self.i][2]:.2f}]")
             print(f"New Waypoint : [{x_targets[self.i][0]:.2f}, {x_targets[self.i][1]:.2f}, {x_targets[self.i][2]:.2f}]")
 
-    def start_lqr_callback(self, msg):
+    def start_controller_callback(self, msg):
         self.t = self.rclpy_node.create_timer(self.delay, self.update_i)
-        self.rclpy_node.lqr_active = not self.rclpy_node.lqr_active
-        if self.rclpy_node.lqr_active:
-            print("LQR activated")
+        self.rclpy_node.ctrl_active = not self.rclpy_node.ctrl_active
+        if self.rclpy_node.ctrl_active:
+            print(f"{self.controller} activated")
         else:
-            print("End of LQR, landing")
+            print("Ended, landing")
             for cf in self.rclpy_node.crazyflies:
                 cf.notifySetpointsStop(10)
             # self.rclpy_node.goTo([0.0, 0.0, 0.25], 0.0, 5.0)
@@ -128,16 +129,21 @@ class FeedbackController_Fig8(Crazyswarm):
         # Calculate control input based on estimated state
         # Publish control input
 
-        # self.rclpy_node.get_logger().info("LQR active? {self.rclpy_node.lqr_active}")
+        # self.rclpy_node.get_logger().info("LQR active? {self.rclpy_node.ctrl_active}")
 
-        if self.rclpy_node.lqr_active:
+        if self.rclpy_node.ctrl_active:
             if self.num_zeros_sent < 5:
                 converted_control = np.zeros(4)
                 control_bounded = np.zeros(4)
                 self.num_zeros_sent += 1
 
             else:
-                control = K_matrix @ (self.rclpy_node.estimated_state - x_targets[self.i]) + u_target
+                if self.controller == "LQR":
+                    control = K_matrix @ (self.rclpy_node.estimated_state - x_targets[self.i]) + u_target
+                elif self.controller == "Hopf":
+                    control = K_matrix @ (self.rclpy_node.estimated_state - x_targets[self.i]) + u_target
+                    # control = self.hopf_control()
+
                 control_bounded = np.concatenate((np.clip(control[:3], -self.control_angle_bound, self.control_angle_bound), [control[3]])) # CONTROL ANGLE BOUNDING
                 converted_control = self.convert_control(control_bounded)
 

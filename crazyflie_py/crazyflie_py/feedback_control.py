@@ -34,7 +34,7 @@ class FeedbackController(Crazyswarm):  # Might need to have it be a child class 
             cf_name = cf.prefix
             self.odomSubscriber = self.rclpy_node.create_subscription(Odometry, f'{cf_name}/odom', self.odom_callback, 10)
         self.num_zeros_sent = 0.0
-        self.start_lqr_subscriber = self.rclpy_node.create_subscription(String, 'start_lqr', self.start_lqr_callback, 10)
+        self.start_lqr_subscriber = self.rclpy_node.create_subscription(String, 'start_custom_controller', self.start_lqr_callback, 10)
 
     def start_lqr_callback(self, msg):
         self.rclpy_node.lqr_active = not self.rclpy_node.lqr_active

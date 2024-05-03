@@ -383,7 +383,7 @@ class CrazyflieServer(Node):
         yawrate = msg.angular.z
         thrust = int(min(max(msg.linear.z, 0, 0), 65535))
 
-        self.get_logger().info('cmdvel: (%f, %f, %f, %d) ' % (roll, pitch, yawrate, thrust))
+        # self.get_logger().info('cmdvel: (%f, %f, %f, %d) ' % (roll, pitch, yawrate, thrust))
 
         self.cfs[name].cmdVelLegacy(roll, pitch, yawrate, thrust)
         
