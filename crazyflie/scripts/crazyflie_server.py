@@ -112,6 +112,10 @@ class CrazyflieServer(Node):
                     "connection", "crazyflie")
                 if connection == "crazyflie":
                     uri = robot_data[crazyflie]["uri"]
+                    if self._ros_parameters['robot_number'] != "":
+                        self.get_logger().info("Changing uri")
+                        uri = uri[:-1] + str(self._ros_parameters['robot_number'])
+                    self.get_logger().info(f"Adding {crazyflie} with uri {uri}")
                     self.uris.append(uri)
                     self.cf_dict[uri] = crazyflie
                     self.uri_dict[crazyflie] = uri
