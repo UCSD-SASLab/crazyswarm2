@@ -27,14 +27,12 @@ class Backend:
     def time(self) -> float:
         return self.t
 
-    def step(self, states_desired: list[State], actions: list[Action]) -> list[State]:
+    def step(self, states_desired: list[State], actions: list[Action], disturbances: list[State]) -> list[State]:
         # advance the time
         self.t += self.dt
-
         next_states = []
-
-        for uav, action in zip(self.uavs, actions):
-            uav.step(action, self.dt)
+        for uav, action, disturbance in zip(self.uavs, actions, disturbances):
+            uav.step(action, self.dt, disturbance=disturbance)
             next_states.append(uav.state)
 
         # print(states_desired, actions, next_states)
@@ -81,7 +79,7 @@ class Quadrotor:
 
         self.state = state
 
-    def step(self, action, dt, f_a=np.zeros(3)):
+    def step(self, action, dt, disturbance, f_a=np.zeros(3)):
 
         # convert RPM -> Force
         def rpm_to_force(rpm):
@@ -97,14 +95,15 @@ class Quadrotor:
         eta = np.dot(self.B0, force)
         f_u = np.array([0, 0, eta[0]])
         tau_u = np.array([eta[1], eta[2], eta[3]])
-
         # dynamics
         # dot{p} = v
-        pos_next = self.state.pos + self.state.vel * dt
+        pos_next = self.state.pos + self.state.vel * dt + disturbance.pos * dt
         # mv = mg + R f_u + f_a
         vel_next = self.state.vel + (
             np.array([0, 0, -self.g]) +
-            (rowan.rotate(self.state.quat, f_u) + f_a) / self.mass) * dt
+            (rowan.rotate(self.state.quat, f_u) + f_a) / self.mass) * dt + (
+            disturbance.vel * dt
+            )
 
         # dot{R} = R S(w)
         # to integrate the dynamics, see

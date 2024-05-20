@@ -58,6 +58,8 @@ class CrazyflieSIL:
         # current setpoint
         self.setpoint = firm.setpoint_t()
 
+        self.disturbance = firm.setpoint_t()
+
         # latest sensor values.
         self.state = firm.state_t()
         self.state.position.x = self.initialPosition[0]
@@ -193,6 +195,15 @@ class CrazyflieSIL:
         self.setpoint.mode.pitch = firm.modeAbs
         self.setpoint.mode.yaw = firm.modeVelocity
 
+    def setDisturbance(self, pos, vel):
+        self.disturbance.position.x = pos[0]
+        self.disturbance.position.y = pos[1]
+        self.disturbance.position.z = pos[2]
+        self.disturbance.velocity.x = vel[0]
+        self.disturbance.velocity.y = vel[1]
+        self.disturbance.velocity.z = vel[2]
+
+
     def cmdFullState(self, pos, vel, acc, yaw, omega):
         self.mode = CrazyflieSIL.MODE_LOW_FULLSTATE
         self.setpoint.position.x = pos[0]
@@ -235,6 +246,9 @@ class CrazyflieSIL:
     # def cmdStop(self):
     #     # TODO: set mode to MODE_IDLE?
     #     pass
+
+    def getDisturbance(self):
+        return self._fwsetpoint_to_sim_data_types_state(self.disturbance)
 
     def getSetpoint(self):
         if self.mode == CrazyflieSIL.MODE_HIGH_POLY:
@@ -307,6 +321,8 @@ class CrazyflieSIL:
 
         # TODO: state technically also has acceleration, but sim_data_types does not
 
+
+    
     def executeController(self):
         if self.controller is None:
             return None

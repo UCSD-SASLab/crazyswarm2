@@ -160,7 +160,14 @@ class CrazyflieServer(Node):
                 partial(self._cmd_full_state_changed, name=name),
                 10
             )
-            
+
+            self.create_subscription(
+                FullState,
+                name + '/disturbance',
+                partial(self._cmd_disturbance_changed, name=name),
+                10
+            )
+
             self.pose_publishers[name] = self.create_publisher(PoseStamped, name + "/pose", 10)
             self.odom_publishers[name] = self.create_publisher(Odometry, name + "/odom", 10)
 
@@ -195,8 +202,9 @@ class CrazyflieServer(Node):
         states_desired = [cf.getSetpoint() for _, cf in self.cfs.items()]
         # execute the control loop
         actions = [cf.executeController() for _, cf in self.cfs.items()]
+        disturbances = [cf.getDisturbance() for _, cf in self.cfs.items()]
         # execute the physics simulator
-        states_next = self.backend.step(states_desired, actions)
+        states_next = self.backend.step(states_desired, actions, disturbances)
 
         # update the resulting state
         for state, (name, cf) in zip(states_next, self.cfs.items()):
@@ -383,7 +391,7 @@ class CrazyflieServer(Node):
         yawrate = msg.angular.z
         thrust = int(min(max(msg.linear.z, 0, 0), 65535))
 
-        self.get_logger().info('cmdvel: (%f, %f, %f, %d) ' % (roll, pitch, yawrate, thrust))
+        self.get_logger().info('cmdvel: (%f, %f, %f, %d) ' % (roll, pitch, yawrate, thrust), throttle_duration_sec=5.0)
 
         self.cfs[name].cmdVelLegacy(roll, pitch, yawrate, thrust)
         
@@ -408,6 +416,12 @@ class CrazyflieServer(Node):
             [msg.acc.x, msg.acc.y, msg.acc.z],
             rpy[2],
             [msg.twist.angular.x, msg.twist.angular.y, msg.twist.angular.z])
+
+    def _cmd_disturbance_changed(self, msg, name):
+        self.cfs[name].setDisturbance(
+            [msg.pose.position.x, msg.pose.position.y, msg.pose.position.z],
+            [msg.twist.linear.x, msg.twist.linear.y, msg.twist.linear.z]
+        )
 
 
 def main(args=None):
