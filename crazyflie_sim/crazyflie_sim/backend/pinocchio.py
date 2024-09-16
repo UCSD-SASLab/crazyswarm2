@@ -27,14 +27,14 @@ class Backend:
     def time(self) -> float:
         return self.t
 
-    def step(self, states_desired: list[State], actions: list[Action]) -> list[State]:
+    def step(self, states_desired: list[State], actions: list[Action], disturbances: list[State]) -> list[State]:
         # advance the time
         self.t += self.dt
 
         next_states = []
 
-        for uav, action in zip(self.uavs, actions):
-            uav.step(action, self.dt)
+        for uav, action, disturbance in zip(self.uavs, actions, disturbances):
+            uav.step(action, disturbance, self.dt)
             next_states.append(uav.state)
 
         # print(states_desired, actions, next_states)
@@ -97,7 +97,7 @@ class Quadrotor:
         self.uavPinocchioData = self.uav.createData()
         self.state = state
 
-    def step(self, action, dt):
+    def step(self, action, disturbance, dt):
 
         # m: 0.034
         # max_f: 1.3
@@ -108,7 +108,9 @@ class Quadrotor:
         q, v = sim_state2pinocchio_state(self.state)
         a = pin.aba(self.uav, self.uavPinocchioData, q, v, force_generalized)
         v_next = v + a*dt
+        v_next[0:3] += disturbance.vel * dt
         q_next = pin.integrate(self.uav, q, v*dt)
+        q_next[0:3] += disturbance.pos * dt
         self.state = pinocchio_state2sim_state(q_next, v_next)
 
         # if we fall below the ground, set velocities to 0
