@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 from rclpy.node import Node
 from rclpy.time import Time
-import robot_python
+import dynobench
 from rosgraph_msgs.msg import Clock
 
 # import sys
@@ -30,14 +30,14 @@ class Backend:
     def time(self) -> float:
         return self.t
 
-    def step(self, states_desired: list[State], actions: list[Action]) -> list[State]:
+    def step(self, states_desired: list[State], actions: list[Action], disturbances: list[State]) -> list[State]:
         # advance the time
         self.t += self.dt
 
         next_states = []
 
-        for uav, action in zip(self.uavs, actions):
-            uav.step(action, self.dt)
+        for uav, action, disturbance in zip(self.uavs, actions, disturbances):
+            uav.step(action, disturbance, self.dt)
             next_states.append(uav.state)
 
         # print(states_desired, actions, next_states)
@@ -84,11 +84,11 @@ class Quadrotor:
     """Basic rigid body quadrotor model (no drag) using numpy and rowan."""
 
     def __init__(self, state):
-        self.uav = robot_python.robot_factory(
+        self.uav = dynobench.robot_factory(
             str((Path(__file__).parent / 'data/dynobench/crazyflie2.yaml').resolve()), [], [])
         self.state = state
 
-    def step(self, action, dt):
+    def step(self, action, disturbance, dt):
 
         # m: 0.034
         # max_f: 1.3
@@ -97,6 +97,8 @@ class Quadrotor:
 
         xnext = np.zeros(13)
         self.uav.step(xnext, sim_state2dynobench_state(self.state), normalized_force, dt)
+        xnext[0:3] += disturbance.pos * dt
+        xnext[7:10] += disturbance.vel * dt
         self.state = dynobench_state2sim_state(xnext)
 
         # if we fall below the ground, set velocities to 0

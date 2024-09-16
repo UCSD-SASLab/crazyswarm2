@@ -20,7 +20,7 @@ class Backend:
     def time(self) -> float:
         return self.t
 
-    def step(self, states_desired: list[State], actions: list[Action]) -> list[State]:
+    def step(self, states_desired: list[State], actions: list[Action], disturbances: list[State]) -> list[State]:
         # advance the time
         self.t += self.dt
 
