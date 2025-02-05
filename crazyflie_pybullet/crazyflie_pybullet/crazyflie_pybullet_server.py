@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 
 """
-A crazyflie server for simulation.
+A PyBullet server for crazyflie simulations.
 
-    2022 - Wolfgang Hönig (TU Berlin)
+    2025 - Kaleb Ugalde (UC San Diego)
 """
 
+import time
 from functools import partial
 import importlib
+import numpy as np
 
 from crazyflie_interfaces.msg import FullState, Hover
 from crazyflie_interfaces.srv import GoTo, Land, Takeoff
@@ -28,62 +30,54 @@ from std_srvs.srv import Empty
 from .crazyflie_sil import CrazyflieSIL, TrajectoryPolynomialPiece
 from .sim_data_types import State
 
+from gym_pybullet_drones.utils.enums import DroneModel, Physics
+from gym_pybullet_drones.envs.CFAviary import CFAviary
+from gym_pybullet_drones.control.CTBRControl import CTBRControl
+from gym_pybullet_drones.utils.Logger import Logger
+from gym_pybullet_drones.utils.utils import sync
 
-class CrazyflieServer(Node):
+DEFAULT_DRONES = DroneModel("cf2x")
+DEFAULT_PHYSICS = Physics("pyb")
+DEFAULT_GUI = True
+DEFAULT_PLOT = True
+DEFAULT_USER_DEBUG_GUI = False
+DEFAULT_SIMULATION_FREQ_HZ = 500
+DEFAULT_CONTROL_FREQ_HZ = 25
+DEFAULT_OUTPUT_FOLDER = 'results'
+NUM_DRONES = 1
+INIT_XYZ = np.array([[.5*i, .5*i, .1] for i in range(NUM_DRONES)])
+INIT_RPY = np.array([[.0, .0, .0] for _ in range(NUM_DRONES)])
+
+class CrazyfliePyBulletServer(Node):
 
     def __init__(self):
         super().__init__(
-            'crazyflie_server',
+            'crazyflie_pybullet_server',
             allow_undeclared_parameters=True,
             automatically_declare_parameters_from_overrides=True,
         )
 
+        # Create PyBullet Environment Object
+        self.env = CFAviary(drone_model=DEFAULT_DRONES,
+                            num_drones=NUM_DRONES,
+                            gui=DEFAULT_GUI,
+                            user_debug_gui=DEFAULT_USER_DEBUG_GUI,
+                            pyb_freq=DEFAULT_SIMULATION_FREQ_HZ,
+                            ctrl_freq=DEFAULT_CONTROL_FREQ_HZ)
+        self.pyb_client = self.env.getPyBulletClient()
+
+        # Create logger for PyBullet
+        self.pyb_logger = Logger(logging_freq_hz=DEFAULT_CONTROL_FREQ_HZ,
+                                 num_drones=NUM_DRONES,
+                                 output_folder=DEFAULT_OUTPUT_FOLDER)
+
         # Turn ROS parameters into a dictionary
         self._ros_parameters = self._param_to_dict(self._parameters)
         self.cfs = {}
-
-        self.world_tf_name = 'world'
-        try:
-            self.world_tf_name = self._ros_parameters['world_tf_name']
-        except KeyError:
-            pass
-        robot_data = self._ros_parameters['robots']
-
-        # Parse robots
-        names = []
-        initial_states = []
-        for cfname in robot_data:
-            if robot_data[cfname]['enabled']:
-                type_cf = robot_data[cfname]['type']
-                # do not include virtual objects
-                connection = self._ros_parameters['robot_types'][type_cf].get(
-                    'connection', 'crazyflie')
-                if connection == 'crazyflie':
-                    names.append(cfname)
-                    pos = robot_data[cfname]['initial_position']
-                    initial_states.append(State(pos))
-
-        # initialize backend by dynamically loading the module
-        backend_name = self._ros_parameters['sim']['backend']
-        module = importlib.import_module('.backend.' + backend_name, package='crazyflie_sim')
-        class_ = getattr(module, 'Backend')
-        self.backend = class_(self, names, initial_states)
-
-        # initialize visualizations by dynamically loading the modules
-        self.visualizations = []
-        for vis_key in self._ros_parameters['sim']['visualizations']:
-            if self._ros_parameters['sim']['visualizations'][vis_key]['enabled']:
-                module = importlib.import_module('.visualization.' +
-                                                 str(vis_key),
-                                                 package='crazyflie_sim')
-                class_ = getattr(module, 'Visualization')
-                vis = class_(self,
-                             self._ros_parameters['sim']['visualizations'][vis_key],
-                             names,
-                             initial_states)
-                self.visualizations.append(vis)
-
-        controller_name = backend_name = self._ros_parameters['sim']['controller']
+        
+        names = ["cf231"]
+        initial_states = [State(np.array([0,0,0]))]
+        controller_name = 'mellinger'
 
         # create robot SIL objects
         for name, initial_state in zip(names, initial_states):
@@ -91,22 +85,22 @@ class CrazyflieServer(Node):
                 name,
                 initial_state.pos,
                 controller_name,
-                self.backend.time)
+                self._time
+                )
             
         self.pose_publishers = dict()
         self.odom_publishers = dict()
         for name, _ in self.cfs.items():
-            print(name)
-            pub = self.create_publisher(
-                    String,
-                    name + '/robot_description',
-                    rclpy.qos.QoSProfile(
-                        depth=1,
-                        durability=rclpy.qos.QoSDurabilityPolicy.TRANSIENT_LOCAL))
+            # pub = self.create_publisher(
+            #         String,
+            #         name + '/robot_description',
+            #         rclpy.qos.QoSProfile(
+            #             depth=1,
+            #             durability=rclpy.qos.QoSDurabilityPolicy.TRANSIENT_LOCAL))
 
-            msg = String()
-            msg.data = self._ros_parameters['robot_description'].replace('$NAME', name)
-            pub.publish(msg)
+            # msg = String()
+            # msg.data = self._ros_parameters['robot_description'].replace('$NAME', name)
+            # pub.publish(msg)
 
             self.create_service(
                 Empty,
@@ -185,36 +179,61 @@ class CrazyflieServer(Node):
         self.create_service(Empty, 'all/emergency', self._emergency_callback)
 
         # step as fast as possible
-        max_dt = 0.0 if 'max_dt' not in self._ros_parameters['sim'] \
-            else self._ros_parameters['sim']['max_dt']
-        self.timer = self.create_timer(max_dt, self._timer_callback)
+        # max_dt = 0.0 if 'max_dt' not in self._ros_parameters['sim'] \
+        #     else self._ros_parameters['sim']['max_dt']
+        
+        # Set timestep to control frequency
+        self.max_dt = 1./self.env.ctrl_freq
+
+        self.timer = self.create_timer(self.max_dt, self._timer_callback)
         self.is_shutdown = False
+
+        # Track start time for simulation sync
+        self.start_time = time.time()
+
+        # Simulation control index for PyBullet
+        self.i = 0
+
+        # Keeps track fo simulation time
+        self.t = 0
 
     def on_shutdown_callback(self):
         if not self.is_shutdown:
-            self.backend.shutdown()
-            for visualization in self.visualizations:
-                visualization.shutdown()
-
+            # REPLACE WITH PYBULLET
+            # self.backend.shutdown()
+            # for visualization in self.visualizations:
+            #     visualization.shutdown()
+            self.env.close()
+            self.pyb_logger.save()
+            self.pyb_logger.save_as_csv("beta")
             self.is_shutdown = True
 
     def _timer_callback(self):
+        # self.t = (time.time() - self.start_time) % 60
+        self.t += self.max_dt
+
         # update setpoint
         states_desired = [cf.getSetpoint() for _, cf in self.cfs.items()]
         # execute the control loop
         actions = [cf.executeController() for _, cf in self.cfs.items()]
         disturbances = [cf.getDisturbance() for _, cf in self.cfs.items()]
+
+        print(states_desired, actions, disturbances)
         # execute the physics simulator
-        states_next = self.backend.step(states_desired, actions, disturbances)
+        # REPLACE WITH PYBULLET
+        # states_next = self.backend.step(states_desired, actions, disturbances)
+        obs, reward, terminated, truncated, info = self.env.step(self.i)
 
-        # update the resulting state
-        for state, (name, cf) in zip(states_next, self.cfs.items()):
-            cf.setState(state)
-            self._log_pose_data_callback(name, state)
-            self._log_odom_data_callback(name, state)
+        # Step Forward in PyBullet
+        # for vis in self.visualizations:
+        #     vis.step(self.backend.time(), states_next, states_desired, actions)  
+        self.env.render()
 
-        for vis in self.visualizations:
-            vis.step(self.backend.time(), states_next, states_desired, actions)        
+        # Sync simulation
+        sync(self.i, self.start_time, self.env.CTRL_TIMESTEP) 
+
+        # Advance simulation control index by one
+        self.i += 1      
 
     def _log_pose_data_callback(self, name, state):
         msg = PoseStamped()
@@ -424,11 +443,14 @@ class CrazyflieServer(Node):
             [msg.twist.linear.x, msg.twist.linear.y, msg.twist.linear.z]
         )
 
+    def _time(self):
+        return self.t
+
 
 def main(args=None):
 
     rclpy.init(args=args)
-    crazyflie_server = CrazyflieServer()
+    crazyflie_server = CrazyfliePyBulletServer()
     rclpy.get_default_context().on_shutdown(crazyflie_server.on_shutdown_callback)
 
     try:
