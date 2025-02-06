@@ -169,8 +169,8 @@ def generate_launch_description():
             executable='crazyflie_pybullet_server',
             condition=LaunchConfigurationEquals('backend','pyb'),
             name='crazyflie_pybullet_server',
-            # output='screen',
-            # emulate_tty=True,
+            output='screen',
+            emulate_tty=True,
             # arguments=['']
         ),
     ])
