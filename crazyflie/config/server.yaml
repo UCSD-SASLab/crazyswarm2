@@ -15,7 +15,7 @@
     # simulation related
     sim:
       max_dt: 0.001 #0.1              # artificially limit the step() function (set to 0 to disable)
-      backend: np                 # see backend folder for a list (dynobench, neuralswarm, none, np, pinocchio)
+      backend: np                 # see backend folder for a list (dynobench, neuralswarm, none, np, pinocchio, custom)
       visualizations:             # see visualization folder for a list
         rviz:
           enabled: true
@@ -40,4 +40,4 @@
               calibration:
                 tvec: [0,0,0]
                 rvec: [ 0.61394313, -0.61394313,  1.48218982]   # 45 deg tilt
-      controller: pid # none, pid, mellinger
+      controller: pid # none, pid, mellinger, custom

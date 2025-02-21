@@ -14,6 +14,19 @@ import rowan
 from . import sim_data_types
 
 
+class CustomController:
+    """
+    Custom controller that assumes perfect attitude control.
+    Converts attitude to normalized thrust and roll/pitch"""
+    def __call__(self, setpoint):
+        roll = setpoint.attitude.roll * np.pi / 180
+        pitch = -setpoint.attitude.pitch * np.pi / 180
+        yawrate = setpoint.attitudeRate.yaw * np.pi / 180
+        thrust = setpoint.thrust / 4096.
+        self.control = np.array([roll, pitch, yawrate, thrust])
+        return self.control
+
+
 class TrajectoryPolynomialPiece:
 
     def __init__(self, poly_x, poly_y, poly_z, poly_yaw, duration):
@@ -87,6 +100,10 @@ class CrazyflieSIL:
         # set up controller
         if controller_name == 'none':
             self.controller = None
+        elif controller_name == 'custom':
+            self.controller = CustomController()
+            firm.controllerPidInit()
+            self.backup_controller = firm.controllerPid  # Relies on PID for high-level tasks
         elif controller_name == 'pid':
             firm.controllerPidInit()
             self.controller = firm.controllerPid
@@ -333,7 +350,14 @@ class CrazyflieSIL:
         time_in_seconds = self.time_func()
         # ticks is essentially the time in milliseconds as an integer
         tick = int(time_in_seconds * 1000)
-        if self.controller_name != 'mellinger':
+        if self.controller_name == 'custom':
+            if self.mode != CrazyflieSIL.MODE_LOW_VELOCITY:
+                # Mode low velocity is equivalent to cmdVelLegacy (attitude control)
+                self.backup_controller(self.control, self.setpoint, self.sensors, self.state, tick)
+                self._fwcontrol_to_sim_data_types_action()
+            else:
+                return self.controller(self.setpoint)
+        elif self.controller_name != 'mellinger':
             self.controller(self.control, self.setpoint, self.sensors, self.state, tick)
         else:
             self.controller(
