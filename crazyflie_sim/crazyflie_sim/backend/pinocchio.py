@@ -12,12 +12,12 @@ from ..sim_data_types import Action, State
 class Backend:
     """Backend that uses pinocchio to simulate the rigid-body dynamics."""
 
-    def __init__(self, node: Node, names: list[str], states: list[State]):
+    def __init__(self, node: Node, names: list[str], states: list[State], dt: float):
         self.node = node
         self.names = names
         self.clock_publisher = node.create_publisher(Clock, 'clock', 10)
         self.t = 0
-        self.dt = 0.0005
+        self.dt = dt
 
         self.uavs = []
         for state in states:

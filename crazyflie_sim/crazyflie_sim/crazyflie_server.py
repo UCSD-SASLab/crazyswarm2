@@ -65,9 +65,10 @@ class CrazyflieServer(Node):
 
         # initialize backend by dynamically loading the module
         backend_name = self._ros_parameters['sim']['backend']
+        backend_dt = self._ros_parameters['sim']['backend_dt']
         module = importlib.import_module('.backend.' + backend_name, package='crazyflie_sim')
         class_ = getattr(module, 'Backend')
-        self.backend = class_(self, names, initial_states)
+        self.backend = class_(self, names, initial_states, dt=backend_dt)
 
         # initialize visualizations by dynamically loading the modules
         self.visualizations = []

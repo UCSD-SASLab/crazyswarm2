@@ -10,12 +10,12 @@ from ..sim_data_types import Action, State
 class Backend:
     """Tracks the desired state perfectly (no physics simulation)."""
 
-    def __init__(self, node: Node, names: list[str], states: list[State]):
+    def __init__(self, node: Node, names: list[str], states: list[State], dt: float):
         self.node = node
         self.names = names
         self.clock_publisher = node.create_publisher(Clock, 'clock', 10)
         self.t = 0
-        self.dt = 0.1
+        self.dt = dt
 
     def time(self) -> float:
         return self.t

@@ -12,12 +12,12 @@ from ..sim_data_types import Action, State
 class Backend:
     """Backend that uses a SASlab custom dynamics model."""
 
-    def __init__(self, node: Node, names: list[str], states: list[State]):
+    def __init__(self, node: Node, names: list[str], states: list[State], dt: float):
         self.node = node
         self.names = names
         self.clock_publisher = node.create_publisher(Clock, "clock", 10)
         self.t = 0
-        self.dt = 0.0005  # FIXME: should be set by the user
+        self.dt = dt
 
         self.uavs = []
         self.uavs_takeoff = []
@@ -158,7 +158,6 @@ class Quadrotor:
 
     def step(self, action, dt, disturbance, f_a=np.zeros(3)):
         # dot{p} = v
-        print(action)
         if isinstance(action, np.ndarray):
             pos_next = self.state.pos + self.state.vel * dt + disturbance.pos * dt
             # mv = mg + R f_u + f_a

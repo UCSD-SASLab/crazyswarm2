@@ -337,8 +337,6 @@ class CrazyflieSIL:
         self.sensors.gyro.z = np.degrees(state.omega[2])
 
         # TODO: state technically also has acceleration, but sim_data_types does not
-
-
     
     def executeController(self):
         if self.controller is None:
@@ -352,10 +350,11 @@ class CrazyflieSIL:
         tick = int(time_in_seconds * 1000)
         if self.controller_name == 'custom':
             if self.mode != CrazyflieSIL.MODE_LOW_VELOCITY:
-                # Mode low velocity is equivalent to cmdVelLegacy (attitude control)
+                # Backup controller is PID / Mellinger controller that deals with different modes
                 self.backup_controller(self.control, self.setpoint, self.sensors, self.state, tick)
                 self._fwcontrol_to_sim_data_types_action()
             else:
+                # Mode low velocity is equivalent to cmdVelLegacy (attitude control)
                 return self.controller(self.setpoint)
         elif self.controller_name != 'mellinger':
             self.controller(self.control, self.setpoint, self.sensors, self.state, tick)
