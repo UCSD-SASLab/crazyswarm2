@@ -19,6 +19,10 @@ class Backend:
         self.t = 0
         self.dt = dt
 
+        if self.dt >= 0.001:
+            node.get_logger().warn(
+                f"Backend timestep {self.dt} is too large for accurate simulation. Consider reducing it.")
+
         self.uavs = []
         for state in states:
             uav = Quadrotor(state)
