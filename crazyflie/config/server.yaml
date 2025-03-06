@@ -19,7 +19,7 @@
       backend_dt: 0.01            # time step of the backend (~ backend_dt / max_dt dictates sim-to-real time ratio)
       visualizations:             # see visualization folder for a list
         rviz:
-          enabled: false
+          enabled: true
         pdf:
           enabled: false
           output_file: "result.pdf"
