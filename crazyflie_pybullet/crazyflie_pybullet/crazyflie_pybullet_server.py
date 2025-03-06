@@ -152,7 +152,7 @@ class CrazyfliePyBulletServer(Node):
         # Step Simulation
         obs, reward, terminated, truncated, info = self.env.step(self.i)
         state_msg = Float64MultiArray()
-        state = np.concatenate((self.env.pos[0], self.env.vel[0], self.env.quat[0]))
+        state = np.concatenate((self.env.pos[0], self.env.vel[0], self.env.quat[0], self.env.ang_v[0]))
         state_msg.data = list(state)
 
         self.state_publisher.publish(state_msg)
