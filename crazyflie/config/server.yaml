@@ -17,6 +17,7 @@
       max_dt: 0.001               # artificially limit the step() function (set to 0 to disable) TODO: Rephrase
       backend: np                 # see backend folder for a list (dynobench, neuralswarm, none, np, pinocchio, custom)
       backend_dt: 0.0005           # time step of the backend (~ backend_dt / max_dt dictates sim-to-real time ratio)
+      backend_time_for_stamp: true # if true, the backend will use the time from the stamp, otherwise rclpy get time now
       visualizations:             # see visualization folder for a list
         rviz:
           enabled: true

@@ -27,6 +27,7 @@ from std_srvs.srv import Empty
 # from .backend.none import BackendNone
 from .crazyflie_sil import CrazyflieSIL, TrajectoryPolynomialPiece
 from .sim_data_types import State
+from rclpy.time import Time
 
 
 class CrazyflieServer(Node):
@@ -66,6 +67,7 @@ class CrazyflieServer(Node):
         # initialize backend by dynamically loading the module
         backend_name = self._ros_parameters['sim']['backend']
         backend_dt = self._ros_parameters['sim']['backend_dt']
+        self.backend_time_for_stamp = self._ros_parameters['sim']['backend_time_for_stamp']
         module = importlib.import_module('.backend.' + backend_name, package='crazyflie_sim')
         class_ = getattr(module, 'Backend')
         self.backend = class_(self, names, initial_states, dt=backend_dt)
@@ -234,7 +236,14 @@ class CrazyflieServer(Node):
     def _log_odom_data_callback(self, name, state):
         msg = Odometry()
         msg.child_frame_id = name
-        msg.header.stamp = self.get_clock().now().to_msg()
+        if self.backend_time_for_stamp:
+            time_elapsed_sim = self.backend.time()
+            seconds = int(time_elapsed_sim)
+            nanonseconds = int((time_elapsed_sim - seconds) * 1e9)
+            msg.header.stamp = Time(seconds=seconds, nanoseconds=nanonseconds).to_msg()
+        else:
+            msg.header.stamp = self.get_clock().now().to_msg()
+
         msg.header.frame_id = self.world_tf_name
 
         msg.pose.pose.position.x = state.pos[0]
