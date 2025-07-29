@@ -68,7 +68,8 @@ class CrazyflieServer(Node):
         module = importlib.import_module('.backend.' + backend_name, package='crazyflie_sim')
         class_ = getattr(module, 'Backend')
         self.backend = class_(self, names, initial_states)
-
+        self.get_logger().info(f"Using backend: {backend_name}")
+        self.get_logger().info(f"Number of backend robots: {len(self.backend.uavs)}")
         # initialize visualizations by dynamically loading the modules
         self.visualizations = []
         for vis_key in self._ros_parameters['sim']['visualizations']:
@@ -96,6 +97,7 @@ class CrazyflieServer(Node):
         self.pose_publishers = dict()
         self.odom_publishers = dict()
         for name, _ in self.cfs.items():
+            self.get_logger().info(f"Name: {name}")
             pub = self.create_publisher(
                     String,
                     name + '/robot_description',
@@ -142,12 +144,13 @@ class CrazyflieServer(Node):
                 name + '/notify_setpoints_stop',
                 partial(self._notify_setpoints_stop_callback, name=name)
             )
-            self.create_subscription(
-                Twist,
-                name + '/cmd_vel_legacy',
-                partial(self._cmd_vel_legacy_changed, name=name),
-                10
-            )
+            if name == "cf231": # only for cf231 (cf232 doesn't fly yet)
+                self.create_subscription(
+                    Twist,
+                    name + '/cmd_vel_legacy',
+                    partial(self._cmd_vel_legacy_changed, name=name),
+                    10
+                )
             self.create_subscription(
                 Hover,
                 name + '/cmd_hover',
@@ -204,6 +207,7 @@ class CrazyflieServer(Node):
         actions = [cf.executeController() for _, cf in self.cfs.items()]
         disturbances = [cf.getDisturbance() for _, cf in self.cfs.items()]
         # execute the physics simulator
+        self.get_logger().info(f"Actions desired: {actions}")
         states_next = self.backend.step(states_desired, actions, disturbances)
 
         # update the resulting state
