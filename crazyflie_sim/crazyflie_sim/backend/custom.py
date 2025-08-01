@@ -10,34 +10,45 @@ from ..sim_data_types import Action, State
 
 
 class Backend:
-    """Backend that uses newton-euler rigid-body dynamics implemented in numpy."""
+    """Backend that uses a SASlab custom dynamics model."""
 
     def __init__(self, node: Node, names: list[str], states: list[State], dt: float):
         self.node = node
         self.names = names
-        self.clock_publisher = node.create_publisher(Clock, 'clock', 10)
+        self.clock_publisher = node.create_publisher(Clock, "clock", 10)
         self.t = 0
         self.dt = dt
 
-        if self.dt >= 0.001:
-            node.get_logger().warn(
-                f"Backend timestep {self.dt} is too large for accurate simulation. Consider reducing it.")
-
         self.uavs = []
+        self.uavs_takeoff = []
         for state in states:
             uav = Quadrotor(state)
             self.uavs.append(uav)
+            uav_backup = QuadrotorNumpy(state)
+            self.uavs_takeoff.append(uav_backup)
 
     def time(self) -> float:
         return self.t
 
-    def step(self, states_desired: list[State], actions: list[Action], disturbances: list[State]) -> list[State]:
+    def step(
+        self,
+        states_desired: list[State],
+        actions: list[Action],
+        disturbances: list[State],
+    ) -> list[State]:
         # advance the time
         self.t += self.dt
         next_states = []
-        for uav, action, disturbance in zip(self.uavs, actions, disturbances):
-            uav.step(action, self.dt, disturbance=disturbance)
-            next_states.append(uav.state)
+        for i, (uav, action, disturbance) in enumerate(zip(self.uavs, actions, disturbances)):
+            backup_uav = self.uavs_takeoff[i]
+            if isinstance(action, np.ndarray):
+                uav.step(action, self.dt, disturbance=disturbance)
+                next_states.append(uav.state)
+                backup_uav.state = uav.state
+            else:
+                backup_uav.step(action, self.dt, disturbance=disturbance)
+                next_states.append(backup_uav.state)
+                uav.state = backup_uav.state
 
         # print(states_desired, actions, next_states)
         # publish the current clock
@@ -51,8 +62,9 @@ class Backend:
         pass
 
 
-class Quadrotor:
-    """Basic rigid body quadrotor model (no drag) using numpy and rowan."""
+class QuadrotorNumpy:
+    """Basic rigid body quadrotor model (no drag) using numpy and rowan.
+    Assumes control is forces."""
 
     def __init__(self, state):
         # parameters (Crazyflie 2.0 quadrotor)
@@ -133,3 +145,44 @@ class Quadrotor:
             self.state.pos[2] = 0
             self.state.vel = [0, 0, 0]
             self.state.omega = [0, 0, 0]
+
+
+class Quadrotor:
+    """Basic quadrotor model assuming control is attitude + thrust"""
+
+    def __init__(self, state):
+        self.g = 9.81  # not signed
+        self.state = state
+        self.internal_state = np.zeros(7)
+        self.i = 0
+
+    def step(self, action, dt, disturbance, f_a=np.zeros(3)):
+        # dot{p} = v
+        if isinstance(action, np.ndarray):
+            pos_next = self.state.pos + self.state.vel * dt + disturbance.pos * dt
+            # mv = mg + R f_u + f_a
+            vel_next = (
+                self.state.vel
+                + dt
+                * np.array([self.g * action[1], -self.g * action[0], action[3] - self.g])
+                + dt * disturbance.vel
+            )
+            ypr = rowan.to_euler(self.state.quat)
+            yaw_next = ypr[0] + action[2] * dt
+            eulerangles = np.array([yaw_next, action[1], action[0]])
+            q_next = rowan.from_euler(*eulerangles)
+            # omega_next = np.array([0, 0, action[2]])
+            omega_next = np.zeros(3)  # TODO: check if sufficient
+
+            self.state.pos = pos_next
+            self.state.vel = vel_next
+            self.state.quat = q_next
+            self.state.omega = omega_next
+
+            # if we fall below the ground, set velocities to 0
+            if self.state.pos[2] < 0:
+                self.state.pos[2] = 0
+                self.state.vel = [0, 0, 0]
+                self.state.omega = [0, 0, 0]
+        else:
+            self.state = self.state

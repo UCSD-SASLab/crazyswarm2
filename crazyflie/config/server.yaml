@@ -14,8 +14,10 @@
       query_all_values_on_connect: False
     # simulation related
     sim:
-      max_dt: 0.001 #0.1              # artificially limit the step() function (set to 0 to disable)
-      backend: np                 # see backend folder for a list 
+      max_dt: 0.001               # artificially limit the step() function (set to 0 to disable) TODO: Rephrase
+      backend: np                 # see backend folder for a list (dynobench, neuralswarm, none, np, pinocchio, custom)
+      backend_dt: 0.0005           # time step of the backend (~ backend_dt / max_dt dictates sim-to-real time ratio)
+      backend_time_for_stamp: true # if true, the backend will use the time from the stamp, otherwise rclpy get time now
       visualizations:             # see visualization folder for a list
         rviz:
           enabled: true
@@ -40,4 +42,4 @@
               calibration:
                 tvec: [0,0,0]
                 rvec: [ 0.61394313, -0.61394313,  1.48218982]   # 45 deg tilt
-      controller: pid # none, pid, mellinger
+      controller: pid # none, pid, mellinger, custom

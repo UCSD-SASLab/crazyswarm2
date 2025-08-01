@@ -3,7 +3,7 @@ robots:
   cf231:
     enabled: true
     uri: radio://0/80/2M/E7E7E7E7E1
-    initial_position: [-4.5, 0.0, 0.]
+    initial_position: [0.0, 2.2, 0.]
     # initial_position: [0., 0.3, 0.0]
     type: cf21_single_PID  # see robot_types
     # firmware_params:
