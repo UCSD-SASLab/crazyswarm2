@@ -13,6 +13,7 @@ import importlib
 from crazyflie_interfaces.msg import FullState, Hover
 from crazyflie_interfaces.srv import GoTo, Land, Takeoff
 from crazyflie_interfaces.srv import NotifySetpointsStop, StartTrajectory, UploadTrajectory
+from crazyflie_interfaces.srv import Arm
 from geometry_msgs.msg import Twist
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
@@ -42,8 +43,7 @@ class CrazyflieServer(Node):
         # Turn ROS parameters into a dictionary
         self._ros_parameters = self._param_to_dict(self._parameters)
         self.cfs = {}
-
-        world_tf_name = 'world'
+        self.world_tf_name = 'world'
         robot_yaml_version = 0
 
         try:
@@ -68,7 +68,7 @@ class CrazyflieServer(Node):
                     pos = robot_data[cfname]['initial_position']
                     initial_states.append(State(pos))
                     # Get the current reference frame for the robot
-                    reference_frame = world_tf_name
+                    reference_frame = self.world_tf_name
                     if robot_yaml_version >= 3:
                         try:
                             reference_frame = self._ros_parameters['all']['reference_frame']
@@ -150,6 +150,10 @@ class CrazyflieServer(Node):
                 partial(self._emergency_callback, name=name)
             )
             self.create_service(
+                Arm, name +
+                "/arm", partial(self._arm_callback, name=name)
+            )
+            self.create_service(
                 Takeoff,
                 name + '/takeoff',
                 partial(self._takeoff_callback, name=name)
@@ -212,6 +216,7 @@ class CrazyflieServer(Node):
         self.create_service(Takeoff, 'all/takeoff', self._takeoff_callback)
         self.create_service(Land, 'all/land', self._land_callback)
         self.create_service(GoTo, 'all/go_to', self._go_to_callback)
+        self.create_service(Arm, 'all/arm', self._arm_callback)
         self.create_service(StartTrajectory,
                             'all/start_trajectory',
                             self._start_trajectory_callback)
@@ -306,6 +311,12 @@ class CrazyflieServer(Node):
 
     def _emergency_callback(self, request, response, name='all'):
         self.get_logger().info(f'[{name}] emergency not yet implemented')
+
+        return response
+    
+    def _arm_callback(self, request, response, name='all'):
+        """Service callback to arm the crazyflie."""
+        self.get_logger().info(f'[{name}] arm: {request.arm}')
 
         return response
 
