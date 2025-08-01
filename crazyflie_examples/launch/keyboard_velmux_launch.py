@@ -2,39 +2,26 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
-import yaml
 
 
 def generate_launch_description():
-    # load crazyflies
-    crazyflies_yaml = os.path.join(
-        get_package_share_directory('crazyflie'),
-        'config',
-        'crazyflies.yaml')
 
-    with open(crazyflies_yaml, 'r') as ymlfile:
-        crazyflies = yaml.safe_load(ymlfile)
-
-    server_params = crazyflies
-
-    # robot description
-    urdf = os.path.join(
-        get_package_share_directory('crazyflie'),
-        'urdf',
-        'crazyflie_description.urdf')
-    with open(urdf, 'r') as f:
-        robot_desc = f.read()
-    server_params['robot_description'] = robot_desc
+    crazyflie = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([os.path.join(
+            get_package_share_directory('crazyflie'), 'launch'),
+            '/launch.py']),
+        launch_arguments={
+            'backend': 'cflib',
+            'gui': 'false',
+            'teleop': 'false',
+            'mocap': 'false',
+            }.items())
 
     return LaunchDescription([
-        Node(
-            package='crazyflie',
-            executable='crazyflie_server.py',
-            name='crazyflie_server',
-            output='screen',
-            parameters=[server_params]
-        ),
+        crazyflie,
         Node(
             package='crazyflie',
             executable='vel_mux.py',

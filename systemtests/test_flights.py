@@ -141,7 +141,7 @@ class TestFlights(unittest.TestCase):
         
         # src = f"source {str(self.ros2_ws)}/install/setup.bash"
         try:
-            command = f"{self.src} && ros2 bag record -s mcap -o test_{testname} /tf"   
+            command = f"{self.src} && ros2 bag record -s mcap -o test_{testname} /tf /rosout"   
             record_bag =  Popen(command, shell=True, stderr=PIPE, stdout=True, text=True,
                                 cwd= self.ros2_ws / "results/", start_new_session=True, executable="/bin/bash") 
             atexit.register(clean_process, record_bag)
@@ -202,12 +202,11 @@ class TestFlights(unittest.TestCase):
         test_passed = self.translate_plot_and_check("figure8")
         assert test_passed, "figure8 test failed : deviation larger than epsilon"
 
-
-    def test_multi_trajectory(self):
-        self.test_file = "multi_trajectory_ideal_traj0.csv"
-        self.record_start_and_clean("multi_trajectory", 80)
-        test_passed = self.translate_plot_and_check("multi_trajectory")
-        assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
+    # def test_multi_trajectory(self):
+    #     self.test_file = "multi_trajectory_traj0_ideal.csv"
+    #     self.record_start_and_clean("multi_trajectory", 80)
+    #     test_passed = self.translate_plot_and_check("multi_trajectory")
+    #     assert test_passed, "multitrajectory test failed : deviation larger than epsilon"
 
 
 

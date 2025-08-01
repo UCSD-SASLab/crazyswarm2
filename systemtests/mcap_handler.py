@@ -7,7 +7,7 @@ import csv
 
 class McapHandler:
     def __init__(self):
-        pass
+        self.takeoff_time = None
 
     def read_messages(self, input_bag: str):
         reader = rosbag2_py.SequentialReader()
@@ -36,18 +36,32 @@ class McapHandler:
         '''A method which translates an .mcap rosbag file format to a .csv file. 
         Also modifies the timestamp to start at 0.0 instead of the wall time.
         Only written to translate the /tf topic but could easily be extended to other topics'''
-
-        t_start = None
+        t_start_bag = None #this is the timestamp of the first message we read in the bag (doesn't mean it's exactly the start time of the bag but close enough ?)
         try:
             print("Translating .mcap to .csv")
             f = open(outputfile, 'w+')
             writer = csv.writer(f)
+            writer.writerow(["# t"," x"," y"," z"])
             for topic, msg, timestamp in self.read_messages(inputbag):
                 if topic =="/tf":
-                    if t_start == None:
-                        t_start = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) 
-                    t = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) - t_start
+                    if t_start_bag == None:
+                        t_start_bag = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) 
+                    t = msg.transforms[0].header.stamp.sec + msg.transforms[0].header.stamp.nanosec *10**(-9) -t_start_bag
                     writer.writerow([t, msg.transforms[0].transform.translation.x, msg.transforms[0].transform.translation.y, msg.transforms[0].transform.translation.z])
+                if topic == "/rosout":  #and t_start_bag != None :
+                    if msg.name == "crazyflie_server" and msg.function == "takeoff":
+                        t = msg.stamp.sec + msg.stamp.nanosec *10**(-9) - t_start_bag
+                        self.takeoff_time = t
+                    #the takeoff message in simulation has a sligthly different name than IRL, so we need this to record the sim takeoff time
+                    #BUT for some unknown reason the sim tests seem to work perfectly without even recording takeoff and adjusting the offset
+                    #so I will leave this commented here just in case the sim tests have to be worked on
+                    # if msg.name == "crazyflie_server" and msg.function == "_takeoff_callback":
+                    #     t = msg.stamp.sec + msg.stamp.nanosec *10**(-9)
+                    #     self.takeoff_time = t
+                    #     print(f"takeoff at {self.takeoff_time}")
+
+            #write the "takeoff command" time as a comment on the last line
+            writer.writerow([f"### takeoff time : {self.takeoff_time}"])
             f.close()
         except FileNotFoundError:
             print(f"McapHandler : file {outputfile} not found")
@@ -68,4 +82,3 @@ if __name__ == "__main__":
 
     translator =  McapHandler()
     translator.write_mcap_to_csv(args.inputbag,args.outputfile)
-
