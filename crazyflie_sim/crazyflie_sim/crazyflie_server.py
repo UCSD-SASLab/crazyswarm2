@@ -144,13 +144,12 @@ class CrazyflieServer(Node):
                 name + '/notify_setpoints_stop',
                 partial(self._notify_setpoints_stop_callback, name=name)
             )
-            if name == "cf231": # only for cf231 (cf232 doesn't fly yet)
-                self.create_subscription(
-                    Twist,
-                    name + '/cmd_vel_legacy',
-                    partial(self._cmd_vel_legacy_changed, name=name),
-                    10
-                )
+            self.create_subscription(
+                Twist,
+                name + '/cmd_vel_legacy',
+                partial(self._cmd_vel_legacy_changed, name=name),
+                10
+            )
             self.create_subscription(
                 Hover,
                 name + '/cmd_hover',
