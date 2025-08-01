@@ -24,6 +24,7 @@ from cflib.crazyflie.mem import MemoryElement
 from cflib.crazyflie.mem import Poly4D
 
 from crazyflie_interfaces.srv import Takeoff, Land, GoTo, RemoveLogging, AddLogging
+from crazyflie_interfaces.srv import Arm
 from crazyflie_interfaces.srv import UploadTrajectory, StartTrajectory, NotifySetpointsStop
 from rcl_interfaces.msg import ParameterDescriptor, SetParametersResult, ParameterType
 from crazyflie_interfaces.msg import Status, Hover, LogDataGeneric, FullState
@@ -114,7 +115,7 @@ class CrazyflieServer(Node):
                     uri = robot_data[crazyflie]["uri"]
                     if self._ros_parameters['robot_number'] != "":
                         self.get_logger().info("Changing uri")
-                        uri = uri[:-1] + str(self._ros_parameters['robot_number'])
+                        uri = uri[:-2] + f"{int(self._ros_parameters['robot_number']):02d}"
                     self.get_logger().info(f"Adding {crazyflie} with uri {uri}")
                     self.uris.append(uri)
                     self.cf_dict[uri] = crazyflie
@@ -252,6 +253,10 @@ class CrazyflieServer(Node):
                 GoTo, name + "/go_to", partial(self._go_to_callback, uri=uri)
             )
             self.create_service(
+                Arm, name +
+                "/arm", partial(self._arm_callback, uri=uri)
+            )           
+            self.create_service(
                 StartTrajectory, name +
                 "/start_trajectory", partial(
                     self._start_trajectory_callback, uri=uri)
@@ -291,6 +296,7 @@ class CrazyflieServer(Node):
             )
 
         # Create services for the entire swarm and each individual crazyflie
+        self.create_service(Arm, "all/arm", self._arm_callback)
         self.create_service(Takeoff, "all/takeoff", self._takeoff_callback)
         self.create_service(Land, "all/land", self._land_callback)
         self.create_service(GoTo, "all/go_to", self._go_to_callback)
@@ -756,6 +762,28 @@ class CrazyflieServer(Node):
                 self.swarm._cfs[link_uri].cf.loc.send_emergency_stop()
         else:
             self.swarm._cfs[uri].cf.loc.send_emergency_stop()
+
+        return response
+
+    def _arm_callback(self, request, response, uri="all"):
+        """
+        Service callback to arm or disarm the Crazyflie
+        """
+
+        arm_bool = request.arm
+
+        self.get_logger().info(
+            f"[{self.cf_dict[uri]}] Arm request is {arm_bool} "
+        )
+        if uri == "all":
+            for link_uri in self.uris:
+                self.swarm._cfs[link_uri].cf.platform.send_arming_request(
+                    arm_bool
+                )
+        else:
+            self.swarm._cfs[uri].cf.platform.send_arming_request(
+                    arm_bool
+                )
 
         return response
 
