@@ -1,15 +1,19 @@
 /motion_capture_tracking:
   ros__parameters:
+    # one of "optitrack", "optitrack_closed_source", "vicon", "qualisys", "nokov", "vrpn", "motionanalysis"
     type: "optitrack_closed_source"
+    # Specify the hostname or IP of the computer running the motion capture software
     hostname: "192.168.0.108"
-
     mode: "motionCapture" # one of libobjecttracker, motionCapture, libRigidBodyTracker
 
     topics:
+      frame_id: "mocap"
       poses:
         qos:
           mode: "sensor"
           deadline: 100.0 # Hz
+      tf:
+        child_frame_id: "{}_mocap"
 
     marker_configurations:
       default: # for standard Crazyflie

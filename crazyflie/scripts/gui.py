@@ -194,6 +194,8 @@ class NiceGuiNode(Node):
             supervisor_text += "auto-arm; "
         if msg.supervisor_info & Status.SUPERVISOR_INFO_CAN_FLY:
             supervisor_text += "can fly; "
+        else:
+            status_ok = False
         if msg.supervisor_info & Status.SUPERVISOR_INFO_IS_FLYING:
             supervisor_text += "is flying; "
             is_flying = True

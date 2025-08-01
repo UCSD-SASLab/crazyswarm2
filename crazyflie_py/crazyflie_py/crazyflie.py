@@ -15,7 +15,7 @@ from collections import defaultdict
 
 
 from crazyflie_interfaces.msg import FullState, Position, Status, TrajectoryPolynomialPiece
-from crazyflie_interfaces.srv import GoTo, Land,\
+from crazyflie_interfaces.srv import Arm, GoTo, Land, \
     NotifySetpointsStop, StartTrajectory, Takeoff, UploadTrajectory
 from geometry_msgs.msg import Point, Twist
 import numpy as np
@@ -133,6 +133,9 @@ class Crazyflie:
         self.notifySetpointsStopService = node.create_client(
             NotifySetpointsStop, prefix + '/notify_setpoints_stop')
         self.notifySetpointsStopService.wait_for_service()
+        self.armService = node.create_client(
+            Arm, prefix + '/arm')
+        # self.armService.wait_for_service()
         self.setParamsService = node.create_client(
             SetParameters, '/crazyflie_server/set_parameters')
         self.setParamsService.wait_for_service()
@@ -141,11 +144,12 @@ class Crazyflie:
         self.status = {}
 
         # Query some settings
-        getParamsService = node.create_client(GetParameters, '/crazyflie_server/get_parameters')
-        getParamsService.wait_for_service()
+        self.getParamsService = node.create_client(
+            GetParameters, '/crazyflie_server/get_parameters')
+        self.getParamsService.wait_for_service()
         req = GetParameters.Request()
         req.names = ['robots.{}.initial_position'.format(cfname), 'robots.{}.uri'.format(cfname)]
-        future = getParamsService.call_async(req)
+        future = self.getParamsService.call_async(req)
         while rclpy.ok():
             rclpy.spin_once(node)
             if future.done():
@@ -156,7 +160,7 @@ class Crazyflie:
                 elif response.values[0].type == ParameterType.PARAMETER_DOUBLE_ARRAY:
                     self.initialPosition = np.array(response.values[0].double_array_value)
                 else:
-                    assert(False)
+                    assert False
 
                 # extract uri
                 self.uri = response.values[1].string_value
@@ -465,6 +469,21 @@ class Crazyflie:
         req.group_mask = groupMask
         self.notifySetpointsStopService.call_async(req)
 
+    def arm(self, arm=True):
+        """
+        Arms the quadrotor.
+
+        For a brushless or Bolt-based drone the motors start spinning and flight
+        is enabled.
+
+        Args:
+            arm (boolean): True if the motors should be armed, False otherwise.
+
+        """
+        req = Arm.Request()
+        req.arm = arm
+        self.armService.call_async(req)
+
     # def position(self):
     #     """Returns the last true position measurement from motion capture.
 
@@ -483,26 +502,45 @@ class Crazyflie:
     #       '/world', '/cf' + str(self.id), rospy.Time(0))
     #     return np.array(position)
 
-    # def getParam(self, name):
-    #     """Returns the current value of the onboard named parameter.
+    def getParam(self, name):
+        """
+        Get the current value of the onboard named parameter.
 
-    #     Parameters are named values of various primitive C types that control
-    #     the firmware's behavior. For more information, see
-    #     https://www.bitcraze.io/documentation/repository/crazyflie-firmware/master/userguides/logparam/.
+        Parameters are named values of various primitive C types that control
+        the firmware's behavior. For more information, see
+        https://www.bitcraze.io/documentation/repository/crazyflie-firmware/master/userguides/logparam/.
 
-    #     Parameters are read at system startup over the radio and cached.
-    #     The ROS launch file can also be used to set parameter values at startup.
-    #     Subsequent calls to :meth:`setParam()` will update the cached value.
-    #     However, if the parameter changes for any other reason, the cached value
-    #     might become stale. This situation is not common.
+        Parameters are read at system startup over the radio and cached.
+        The ROS launch file can also be used to set parameter values at startup.
+        Subsequent calls to :meth:`setParam()` will update the cached value.
+        However, if the parameter changes for any other reason, the cached value
+        might become stale. This situation is not common.
 
-    #     Args:
-    #         name (str): The parameter's name.
+        Args:
+            name (str): The parameter's name.
 
-    #     Returns:
-    #         value (Any): The parameter's value.
-    #     """
-    #     return rospy.get_param(self.prefix + '/' + name)
+        Returns:
+            value (Any): The parameter's value.
+
+        """
+        try:
+            param_name = self.prefix[1:] + '.params.' + name
+            req = GetParameters.Request()
+            req.names = [param_name]
+            future = self.getParamsService.call_async(req)
+            rclpy.spin_until_future_complete(self.node, future)
+            param_type = self.paramTypeDict[name]
+            if param_type == ParameterType.PARAMETER_INTEGER:
+                param_value = future.result().values[0].integer_value
+            elif param_type == ParameterType.PARAMETER_DOUBLE:
+                param_value = future.result().values[0].double_value
+            return param_value
+        except KeyError as e:
+            self.node.get_logger().warn(f'(crazyflie.py)getParam : keyError raised {e}')
+            return float('nan')
+        except Exception as e:
+            self.node.get_logger().warn(f'(crazyflie.py)getParam : exception raised {e}')
+            return float('nan')
 
     def setParam(self, name, value):
         """
@@ -515,15 +553,20 @@ class Crazyflie:
             value (Any): The parameter's value.
 
         """
-        param_name = self.prefix[1:] + '.params.' + name
-        param_type = self.paramTypeDict[name]
-        if param_type == ParameterType.PARAMETER_INTEGER:
-            param_value = ParameterValue(type=param_type, integer_value=int(value))
-        elif param_type == ParameterType.PARAMETER_DOUBLE:
-            param_value = ParameterValue(type=param_type, double_value=float(value))
-        req = SetParameters.Request()
-        req.parameters = [Parameter(name=param_name, value=param_value)]
-        self.setParamsService.call_async(req)
+        try:
+            param_name = self.prefix[1:] + '.params.' + name
+            param_type = self.paramTypeDict[name]
+            if param_type == ParameterType.PARAMETER_INTEGER:
+                param_value = ParameterValue(type=param_type, integer_value=int(value))
+            elif param_type == ParameterType.PARAMETER_DOUBLE:
+                param_value = ParameterValue(type=param_type, double_value=float(value))
+            req = SetParameters.Request()
+            req.parameters = [Parameter(name=param_name, value=param_value)]
+            self.setParamsService.call_async(req)
+        except KeyError as e:
+            self.node.get_logger().warn(f'(crazyflie.py)setParam : keyError raised {e}')
+        except Exception as e:
+            self.node.get_logger().warn(f'(crazyflie.py)setParam : exception raised {e}')
 
     # def setParams(self, params):
     #     """Changes the value of several parameters at once.
@@ -762,6 +805,8 @@ class CrazyflieServer(rclpy.node.Node):
         self.goToService.wait_for_service()
         self.startTrajectoryService = self.create_client(StartTrajectory, 'all/start_trajectory')
         self.startTrajectoryService.wait_for_service()
+        self.armService = self.create_client(Arm, 'all/arm')
+        # self.armService.wait_for_service()
         self.setParamsService = self.create_client(
             SetParameters, '/crazyflie_server/set_parameters')
         self.setParamsService.wait_for_service()
@@ -951,6 +996,21 @@ class CrazyflieServer(rclpy.node.Node):
         req.reversed = reverse
         req.relative = relative
         self.startTrajectoryService.call_async(req)
+
+    def arm(self, arm=True):
+        """
+        Broadcasted arming.
+
+        For a brushless or Bolt-based drone the motors start spinning and flight
+        is enabled.
+
+        Args:
+            arm (boolean): True if the motors should be armed, False otherwise.
+
+        """
+        req = Arm.Request()
+        req.arm = arm
+        self.armService.call_async(req)
 
     def setParam(self, name, value):
         """Set parameter via broadcasts. See Crazyflie.setParam for details."""

@@ -5,11 +5,13 @@ Installation
 
 Crazyswarm2 runs on **Ubuntu Linux** in one of the following configurations:
 
-====== ======== ============
+====== ======== ====== 
 Ubuntu Python   ROS 2
------- -------- ------------
-22.04  3.10     Humble, Iron
-====== ======== ============
+------ -------- ------
+22.04  3.10     Humble
+------ -------- ------
+24.04  3.12     Jazzy
+====== ======== ======
 
 .. warning::
    The `Windows Subsystem for Linux (WSL) <https://docs.microsoft.com/en-us/windows/wsl/about>`_ is experimentally supported but you'll have to use `usbipd-win <https://github.com/dorssel/usbipd-win/>`_.
@@ -21,21 +23,27 @@ Ubuntu Python   ROS 2
 First Installation
 ------------------
 
-1. If needed, install ROS 2 using the instructions at https://docs.ros.org/en/galactic/Installation.html or https://docs.ros.org/en/humble/Installation.html.
+1. If needed, install ROS 2 using the instructions at https://docs.ros.org/en/jazzy/Installation.html.
 
 2. Install dependencies
 
     .. code-block:: bash
 
         sudo apt install libboost-program-options-dev libusb-1.0-0-dev
-        pip3 install rowan
+        pip3 install rowan nicegui
+
+   Then install the motion capture ROS 2 package (replace DISTRO with your version of ROS, namely humble, iron, or jazzy):
+
+    .. code-block:: bash
+
+        sudo apt-get install ros-DISTRO-motion-capture-tracking 
 
     If you are planning to use the CFlib backend, do:
 
     .. code-block:: bash
         
         pip3 install cflib transforms3d
-        sudo apt-get install ros-*DISTRO*-tf-transformations
+        sudo apt-get install ros-DISTRO-tf-transformations
 
 3. Set up your ROS 2 workspace
 
@@ -44,17 +52,22 @@ First Installation
         mkdir -p ros2_ws/src
         cd ros2_ws/src
         git clone https://github.com/IMRCLab/crazyswarm2 --recursive
-        git clone --branch ros2 --recursive https://github.com/IMRCLab/motion_capture_tracking.git
 
 4. Build your ROS 2 workspace
 
     .. code-block:: bash
 
         cd ../
+        source /opt/ros/DISTRO/setup.bash
         colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 
     .. note::
        symlink-install allows you to edit Python and config files without running `colcon build` every time.
+
+    .. note::
+       If you install it for the first time, you will see a lot of warnings at first. 
+       As long as the build of the package finish, you can ignore this for now. 
+       
 
 5. Set up Crazyradio
 
@@ -72,11 +85,11 @@ First Installation
 
 7. Set up software-in-the-loop simulation (optional)
 
-    This currently requires cloning the Crazyflie firmware and building the Python bindings manually. In a separate folder (not part of your ROS 2 workspace!), 
+    This currently requires cloning the Crazyflie firmware of the latest tested release (2025.02) and building the Python bindings manually. In a separate folder (not part of your ROS 2 workspace!), 
 
     .. code-block:: bash
 
-        git clone --recursive https://github.com/bitcraze/crazyflie-firmware.git
+        git clone --branch 2025.02 --single-branch --recursive https://github.com/bitcraze/crazyflie-firmware.git
 
     First follow `the instructions to build the python bindings <https://www.bitcraze.io/documentation/repository/crazyflie-firmware/master/building-and-flashing/build/#build-python-bindings>`_ from the bitcraze website. Afterwards, make sure that the bindings can be found in the python path:
 
@@ -99,6 +112,7 @@ You can update your local copy using the following commands:
     git submodule sync
     git submodule update --init --recursive
     cd ../../
+    source /opt/ros/DISTRO/setup.bash
     colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 

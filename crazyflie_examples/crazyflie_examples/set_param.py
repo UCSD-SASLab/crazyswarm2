@@ -4,6 +4,9 @@ from crazyflie_py import Crazyswarm
 
 
 def main():
+    # In case of key errors, wait for all the crazyflies to be fully connected
+    # before running the script.
+    # Also 'query_all_values_on_connect' should be set to True in the server.yaml file.
     swarm = Crazyswarm()
     timeHelper = swarm.timeHelper
     allcfs = swarm.allcfs
@@ -12,6 +15,8 @@ def main():
     for cf in allcfs.crazyflies:
         cf.setParam('led.bitmask', 128)
         timeHelper.sleep(1.0)
+        if cf.getParam('led.bitmask') != 128:
+            print('LED is not disabled!')
 
     timeHelper.sleep(2.0)
 
