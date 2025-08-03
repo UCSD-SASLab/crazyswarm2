@@ -309,11 +309,7 @@ class CrazyflieServer(Node):
             )
             self.create_service(
                 GoTo, name + "/go_to", partial(self._go_to_callback, uri=uri)
-            )
-            self.create_service(
-                Arm, name +
-                "/arm", partial(self._arm_callback, uri=uri)
-            )           
+            )      
             self.create_service(
                 StartTrajectory, name +
                 "/start_trajectory", partial(
