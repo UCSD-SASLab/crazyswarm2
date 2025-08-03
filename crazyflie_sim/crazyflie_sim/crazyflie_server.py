@@ -210,7 +210,6 @@ class CrazyflieServer(Node):
         actions = [cf.executeController() for _, cf in self.cfs.items()]
         disturbances = [cf.getDisturbance() for _, cf in self.cfs.items()]
         # execute the physics simulator
-        self.get_logger().info(f"Actions desired: {actions}")
         states_next = self.backend.step(states_desired, actions, disturbances)
 
         # update the resulting state
