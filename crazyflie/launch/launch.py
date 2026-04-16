@@ -68,6 +68,7 @@ def parse_yaml(context):
             name='motion_capture_tracking',
             output='screen',
             parameters= [motion_capture_params],
+            arguments=['--ros-args', '--log-level', 'error'],
         ),
         Node(
             package='crazyflie',

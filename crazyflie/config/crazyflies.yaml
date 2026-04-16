@@ -4,10 +4,19 @@ fileversion: 3
 robots:
   cf231:
     enabled: true
-    uri: radio://0/80/2M/E7E7E7E7E1
-    initial_position: [-4.5, 0.0, 0.]
-    # initial_position: [0., 0.3, 0.0]
+    uri: radio://0/80/2M/E7E7E7E713
+    # uri: radio://0/80/250K/E7E7E7E703
+    # initial_position: [-3.8, 0., 0.]
+    # initial_position: [-0.3, 0.2, 0.]
+    initial_position: [0.0, 0.0, 0.]
     type: cf21_single_PID  # see robot_types
+    # firmware_params:
+      # commander:  # CoRL paper settings below
+      #   enHighLevel: 1
+      # stabilizer:
+      #   estimator: 2 # 1: complementary, 2: kalman
+      #   controller: 2 # 1: PID, 2: mellinger
+
     # firmware_params:
     #   kalman:
     #     pNAcc_xy: 1.0 # default 0.5
@@ -17,7 +26,37 @@ robots:
     #     topic_name3: 
     #       frequency: 1
     #       vars: ["acc.x", "acc.y"]
-    # reference_frame: "odom_cf231" # use a custom reference frame if no global coordinate system is available
+  #   # reference_frame: "odom_cf231" # use a custom reference frame if no global coordinate system is available
+
+
+  # uncomment for two real agents (if both ghost, use just one)
+  # cf232:
+  #   enabled: true
+  # #   #URI last two numbers are on bottom of drone
+  #   uri: radio://0/80/2M/E7E7E7E712
+  #   # uri: radio://0/80/250K/E7E7E7E706
+  #   # initial_position: [-2.0, -0.2, 0.]
+  #   initial_position: [-2.1, 0.0, 0.0]
+  #   type: cf21_single_PID  # see robot_types
+
+  #   # firmware_params:
+  #   #   ring:
+  #   #     effect: 7 # 6: double spinner, 7: solid color, 16: packetRate
+  #   #     solidBlue: 0 # if set to solid color
+  #   #     solidGreen: 0 # if set to solid color
+  #   #     solidRed: 255 # if set to solid color
+  #   #     headlightEnable: 0
+  #   # firmware_params:
+  #   #   kalman:
+  #   #     pNAcc_xy: 1.0 # default 0.5
+  #   # firmware_logging:
+  #   #   enabled: true
+  #   #   custom_topics:
+  #   #     topic_name3: 
+  #   #       frequency: 1
+  #   #       vars: ["acc.x", "acc.y"]
+  #   # reference_frame: "odom_cf231" # use a custom reference frame if no global coordinate system is available
+
 
 # Definition of the various robot types
 robot_types:
@@ -45,6 +84,15 @@ robot_types:
     firmware_params:
       stabilizer:
         controller: 1
+
+  cf21_color_only:
+    motion_capture:
+      tracking: "librigidbodytracker"  # one of "vendor", "librigidbodytracker"
+      enabled: false
+      marker: default_single_marker
+      dynamics: leniant
+    big_quad: False
+
   cf21:
     motion_capture:
       tracking: "librigidbodytracker" # one of "vendor", "librigidbodytracker"
@@ -122,6 +170,8 @@ all:
     stabilizer:
       estimator: 2 # 1: complementary, 2: kalman
       controller: 2 # 1: PID, 2: mellinger
+    # kalman:
+    #   mNGyro_rollpitch: 0.5
     # ring:
     #   effect: 16 # 6: double spinner, 7: solid color, 16: packetRate
     #   solidBlue: 255 # if set to solid color
